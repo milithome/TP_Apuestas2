@@ -95,8 +95,6 @@ def fechas_teams(equipos_lista:list)->int:
     #aaaaaa
     pass
 
-
-
 def apuesta()->None:
     
     print("Estos son los equipos que estan participando del torneo 2023")
@@ -108,8 +106,7 @@ def apuesta()->None:
         print("Opcion incorrecta, intente de nuevo")
         equipo_op = input("Elija por cual equipo desea apostar(ingrese el numero): ")
 
-
-
+    #funcion de buscar fechas
     id_equipo_op = fechas_teams(equipos_lista)
 
 
