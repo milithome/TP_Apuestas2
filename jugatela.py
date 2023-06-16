@@ -60,7 +60,57 @@ def archivo_csv_r_w_data_users(new_mail:str,new_name:str,new_password:str,new_mo
         for mail, data in users.items():
             csv_writer.writerow([mail,data['name'],data['password'],data['bets'],data['date'],data['money']])
 
+def equipos_liga_2023 () -> dict:
+    url = "https://v3.football.api-sports.io/teams"
+    params = {"league": "128", "season": 2023, "country": "Argentina"}
 
+    headers = {"x-rapidapi-host": "v3.football.api-sports.io", 
+               "x-rapidapi-key": "407726f0daca539a383c3c8ca8e4ca93" }
+
+    respuesta = requests.get(url, params = params, headers = headers)
+    equipos_2023 = {}
+
+    if respuesta.status_code == 200:
+        data = respuesta.json()
+        equipos_2023 = data ["response"]
+
+    #procesa la data y devuelve un dict
+     
+    else:
+        print("Err", respuesta.status_code )
+
+    return equipos_2023
+
+def listar_equipos_2023(equipos_2023:dict)->list:
+    equipos_lista = []
+    for i, equipo in enumerate (equipos_2023, start = 1):
+        nombre_equipo = equipo["team"]["name"]
+        print(f"{i}. {nombre_equipo}")
+        equipos_lista.append(nombre_equipo)
+
+    return equipos_lista
+
+def fechas_teams(equipos_lista:list)->int:
+    #ingresar a la api fixtures/fechas 
+    #aaaaaa
+    pass
+
+def apuesta()->None:
+    
+    print("Estos son los equipos que estan participando del torneo 2023")
+
+    equipos_lista = listar_equipos_2023(equipos_liga_2023())
+
+    equipo_op = input("Elija por cual equipo desea apostar: ")
+    while(equipo_op not in equipos_lista):
+        print("Opcion incorrecta, intente de nuevo")
+        equipo_op = input("Elija por cual equipo desea apostar(ingrese el numero): ")
+
+    #funcion de buscar fechas
+    id_equipo_op = fechas_teams(equipos_lista)
+
+
+    
 def main()->None:
 
     print("Bienvenido a la mejor plataforma de apuestas futboleras")
