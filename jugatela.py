@@ -140,6 +140,8 @@ def apuesta()->None:
     
 def main()->None:
 
+    #falta agregar la parte del menu 
+    
     print("Bienvenido a la mejor plataforma de apuestas futboleras")
     ids_ingresados = []
     
