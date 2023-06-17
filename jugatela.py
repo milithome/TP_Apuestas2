@@ -62,57 +62,86 @@ def archivo_csv_r_w_data_users(new_mail:str,new_name:str,new_password:str,new_mo
 
 def equipos_liga_2023 () -> dict:
     url = "https://v3.football.api-sports.io/teams"
-    params = {"league": "128", "season": 2023, "country": "Argentina"}
+    parameters = {"league": "128", "season": 2023, "country": "Argentina"}
 
     headers = {"x-rapidapi-host": "v3.football.api-sports.io", 
-               "x-rapidapi-key": "407726f0daca539a383c3c8ca8e4ca93" }
+               "x-rapidapi-key": "6560a6c96c1a8e1c14463129104c7c84" }
 
-    respuesta = requests.get(url, params = params, headers = headers)
+    respuesta = requests.get(url, params = parameters, headers = headers)
     equipos_2023 = {}
+    dict_equipos = {}
 
     if respuesta.status_code == 200:
         data = respuesta.json()
         equipos_2023 = data ["response"]
+
+        for equipo in range (28):
+            dict_equipos[equipos_2023[equipo]["team"]["name"]] = equipos_2023[equipo]["team"]["id"]
 
     #procesa la data y devuelve un dict
      
     else:
         print("Err", respuesta.status_code )
 
-    return equipos_2023
+    return dict_equipos
 
-def listar_equipos_2023(equipos_2023:dict)->list:
-    equipos_lista = []
-    for i, equipo in enumerate (equipos_2023, start = 1):
-        nombre_equipo = equipo["team"]["name"]
-        print(f"{i}. {nombre_equipo}")
-        equipos_lista.append(nombre_equipo)
 
-    return equipos_lista
+def fechas_teams(id_team:int)->dict:
+    
+    url = "https://v3.football.api-sports.io/fixtures?"
 
-def fechas_teams(equipos_lista:list)->int:
-    #ingresar a la api fixtures/fechas 
-    #aaaaaa
-    pass
+    parameters = {"league": "128","season": 2023,"team":id_team}
+
+    headers = {"x-rapidapi-host": "v3.football.api-sports.io", "x-rapidapi-key": "6560a6c96c1a8e1c14463129104c7c84" }
+
+    respuesta = requests.get(url, params = parameters, headers = headers)
+    fechas = {}
+    locales = {}
+    visitantes = {}
+    if respuesta.status_code == 200:
+        data = respuesta.json()
+        fechas = data['response']
+        print(f"Fechas de Temporada 2023:")
+
+        for fecha in range(len(fechas[0]['fixture'])):
+            locales[fechas[0]['fixture']['teams']['home']['name']]= fechas[0]['fixture']['teams']['home']['id']
+            visitantes[fechas[0]['fixture']['teams']['away']['name']] = fechas[0]['fixture']['teams']['away']['id'] 
+            fechas[fecha] = [locales[fechas[0]['fixture']['teams']['home']['name']],visitantes[fechas[0]['fixture']['teams']['away']['name']]]           
+        
+        for i in (fechas):
+            print(f"Fecha {i+1}: {fechas[i][0]} vs {fechas[i][1]}")
+
+    else: print("Error al traer los datos")
+
+    return fechas,locales,visitantes
 
 def apuesta()->None:
     
     print("Estos son los equipos que estan participando del torneo 2023")
 
-    equipos_lista = listar_equipos_2023(equipos_liga_2023())
+    equipos_dict = equipos_liga_2023()
 
     equipo_op = input("Elija por cual equipo desea apostar: ")
-    while(equipo_op not in equipos_lista):
+    while(equipo_op not in equipos_dict.values()):
         print("Opcion incorrecta, intente de nuevo")
         equipo_op = input("Elija por cual equipo desea apostar(ingrese el numero): ")
 
+    id_equipo = equipos_dict[equipo_op]
+
     #funcion de buscar fechas
-    id_equipo_op = fechas_teams(equipos_lista)
+    dict_fechas,dict_locales,dict_visitantes = fechas_teams(id_equipo)
+
+    fecha_elegida = input("Ingrese el num de fecha por el que desea apostar: ")
+
+
+
 
 
     
 def main()->None:
 
+    #falta agregar la parte del menu 
+    
     print("Bienvenido a la mejor plataforma de apuestas futboleras")
     ids_ingresados = []
     
@@ -140,5 +169,5 @@ def main()->None:
             pass
 
         op = input("Desea acceder de nuevo a la plataforma? y/n:")
-    
+
 main()
