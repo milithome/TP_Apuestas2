@@ -4,6 +4,8 @@ from passlib.hash import sha256_crypt
 import csv
 import random
 import matplotlib.pyplot as plt 
+import seaborn as sns
+import numpy as np 
 #permitir ingreso usuario y demas
 
 def validar_usuario(usuario:str)->bool:
@@ -222,30 +224,29 @@ def cargar_dinero_cuenta_usuario(id_usuario, dinero, fecha):
 
 
 
-# def equipos_liga_2023 () -> dict:
-#     url = "https://v3.football.api-sports.io/teams"
-#     parameters = {"league": "128", "season": 2023, "country": "Argentina"}
+def equipos_liga_2023 () -> dict:
+    url = "https://v3.football.api-sports.io/teams"
+    parameters = {"league": "128", "season": 2023, "country": "Argentina"}
 
-#     headers = {"x-rapidapi-host": "v3.football.api-sports.io", 
-#                "x-rapidapi-key": "6560a6c96c1a8e1c14463129104c7c84" }
+    headers = {"x-rapidapi-host": "v3.football.api-sports.io","x-rapidapi-key": "6560a6c96c1a8e1c14463129104c7c84" }
 
-#     respuesta = requests.get(url, params = parameters, headers = headers)
-#     equipos_2023 = {}
-#     dict_equipos = {}
+    respuesta = requests.get(url, params = parameters, headers = headers)
+    equipos_2023 = {}
+    dict_equipos = {}
 
-#     if respuesta.status_code == 200:
-#         data = respuesta.json()
-#         equipos_2023 = data ["response"]
+    if respuesta.status_code == 200:
+         data = respuesta.json()
+         equipos_2023 = data ["response"]
 
-#         for equipo in range (28):
-#             dict_equipos[equipos_2023[equipo]["team"]["name"]] = equipos_2023[equipo]["team"]["id"]
+         for equipo in range (28):
+             dict_equipos[equipos_2023[equipo]["team"]["name"]] = equipos_2023[equipo]["team"]["id"]
 
     #procesa la data y devuelve un dict
      
-    # else:
-    #     print("Err", respuesta.status_code )
+    else:
+        print("Err", respuesta.status_code )
 
-    # return dict_equipos
+    return dict_equipos
 
 
 def fechas_teams(id_team:int)->dict:
@@ -277,6 +278,50 @@ def fechas_teams(id_team:int)->dict:
 
     return fechas,locales,visitantes
 
+def grafico(equipo:str)->None:
+
+    dicts_equipos = equipos_liga_2023()
+
+    id_equipo = dicts_equipos[equipo]
+
+    url = "https://v3.football.api-sports.io/teams/statistics?"
+
+    parameters = {"league": "128","season": 2023,"team":id_equipo}
+
+    headers = {"x-rapidapi-host": "v3.football.api-sports.io", "x-rapidapi-key": "6560a6c96c1a8e1c14463129104c7c84" }
+
+    respuesta = requests.get(url, params = parameters, headers = headers)
+
+    dict_info = {}
+
+    golesxminuto = {}
+
+    mins = []
+
+    goles = []
+
+    if respuesta.status_code == 200:
+        data = respuesta.json()
+        dict_info = data['response']
+        
+        for minutos in dict_info['goals']['for']['minute']:
+            mins.append(minutos)
+            goles.append(dict_info['goals']['for']['minute '][minutos]['total'])
+            golesxminuto[minutos] = dict_info['goals']['for']['minute'][minutos]['total']
+        
+
+        for y in range(len(goles)):
+            if goles[y]==None: goles[y]=0
+            else:continue 
+
+        plt.bar(mins,goles)
+        plt.title("Goles por minuto")
+        plt.xlabel("Intervalos de minutos")
+        plt.ylabel("cant. goles")
+        plt.show()
+
+
+
 def apuesta()->None:
     
     print("Estos son los equipos que estan participando del torneo 2023")
@@ -302,8 +347,7 @@ def apuesta()->None:
     
 def main()->None:
 
-    #falta agregar la parte del menu 
-    
+   
     print("Bienvenido a la mejor plataforma de apuestas futboleras")
     ids_ingresados = []
     
@@ -343,8 +387,6 @@ def main()->None:
             if opcion_elegida != 9  or  opcion_elegida != 0:
                 opcion_seleccionada(opcion_elegida, equipos_2023, jugadores_2023)
                 
-                
-               
             else:
                     fin = True
                     print("¡Gracias por su vista! Dejanos una opinion: ")
