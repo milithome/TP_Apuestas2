@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np 
 from PIL import Image
-import urllib.request
 
 #permitir ingreso usuario y demas
 
