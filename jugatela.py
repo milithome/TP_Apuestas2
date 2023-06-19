@@ -522,6 +522,7 @@ def apuesta()->None:
         bet = "-"#como resulto la apuesta 
         #aca habria que descontarle lo que apostp de la cuenta 
 
+    #Lo que faltaria es: 
     #falta verificar que el usuario tenga la plata en cuenta para apostar la cant que este apostando 
     #falta la parte de transacciones aca, tamb la de user_data(o sea agregar a la parte de bets lo que resulto de la variable bet y agregar la plata ganada o perdida a la cuenta)
 
