@@ -83,14 +83,22 @@ def opcion_seleccionada (opcion_elegida:int, equipos_2023:dict, jugadores_2023:d
 
     if opcion_elegida == 1:#finished
         print("--- Equipos de la Liga Profesional Temporada 2023---")
-        equipos_2023 = equipos_liga_2023_2()
+        equipos_2023 = equipos_liga_2023 ()
         listar_equipos_2023 (equipos_2023)
-        equipo_usuario = input("Seleccione equipo: ")
-        while equipo_usuario not in equipos_liga_2023:
-            print("Equipo inválido")
-        jugadores_2023 = jugadores_equipos ()
-        id_equipo_usuario = id_equipo(equipos_2023, equipo_usuario)
-        plantel_2023(id_equipo_usuario, jugadores_2023)
+        id_equipo_usuario = None # Valor predeterminado
+        while id_equipo_usuario is None:
+            equipo_usuario = input("Seleccione equipo: ").capitalize()
+            id_equipo_usuario = buscar_id_equipo(equipos_2023, equipo_usuario)
+            jugadores_2023 = jugadores_equipos()
+            plantel_2023(id_equipo_usuario, jugadores_2023)
+        # equipos_2023 = equipos_liga_2023_2()
+        # listar_equipos_2023 (equipos_2023)
+        # equipo_usuario = input("Seleccione equipo: ")
+        # while equipo_usuario not in equipos_liga_2023:
+        #     print("Equipo inválido")
+        # jugadores_2023 = jugadores_equipos ()
+        # id_equipo_usuario = id_equipo(equipos_2023, equipo_usuario)
+        # plantel_2023(id_equipo_usuario, jugadores_2023)
 
     elif opcion_elegida == 2:#finished
         print("---Tabla de posiciones de la Liga profesional---")
@@ -151,113 +159,38 @@ def opcion_seleccionada (opcion_elegida:int, equipos_2023:dict, jugadores_2023:d
     
 
 def plantel_2023(id_equipo:int, jugadores_2023:dict):
-    jugadores_2023 = jugadores_equipos()
     for jugador in jugadores_2023:
-        if (jugador['statistics'][0]['team']['id'] == id_equipo):
+        equipo = equipos_liga_2023()
+        id_equipo = equipo['team']['id']
+        print(f"\nPlantel de {equipo['team']['name']}:")
+        if jugador['statistics'][0]['team']['id'] == id_equipo:
             print(jugador['player']['name'])
-            equipos_2023 = equipos_liga_2023()
-            for equipo in equipos_2023:
-                id_equipo = equipo['team']['id']
-                print(f"\nPlantel de {equipo['team']['name']}:")
 
-def equipos_liga_2023_2 () -> dict:
-    url = "https://v3.football.api-sports.io/teams"
+
+# def equipos_liga_2023_2 () -> dict:   #toda infp de los equipos, la guardo en un dict: equipos_2023
+#     url = "https://v3.football.api-sports.io/teams"
     
-    parameters = {"league": "128", "season": 2023, "country": "Argentina"}
+#     parameters = {"league": "128", "season": 2023, "country": "Argentina"}
 
-    headers = {"x-rapidapi-host": "v3.football.api-sports.io","x-rapidapi-key": "6560a6c96c1a8e1c14463129104c7c84" }
+#     headers = {"x-rapidapi-host": "v3.football.api-sports.io","x-rapidapi-key": "407726f0daca539a383c3c8ca8e4ca93" }
 
-    respuesta = requests.get(url, params = parameters, headers = headers)
-    equipos_2023 = {}
+#     respuesta = requests.get(url, params = parameters, headers = headers)
+#     equipos_2023 = {}
 
-    if respuesta.status_code == 200:
-        data = respuesta.json()
-        equipos_2023 = data ["response"]
+#     if respuesta.status_code == 200:
+#         data = respuesta.json()
+#         equipos_2023 = data ["response"]
 
-    #procesa la data y devuelve un dict
-    else:
-        print("Err", respuesta.status_code )
-    return equipos_2023
+#     #procesa la data y devuelve un dict
+#     else:
+#         print("Err", respuesta.status_code )
+#     return equipos_2023
 
-def jugadores_equipos ()-> dict:
-    url = "https://v3.football.api-sports.io/teams"
-    parameters ={"league": "128", "season": 2023}
-    headers = {"x-rapidapi-host": "v3.football.api-sports.io","x-rapidapi-key": "6560a6c96c1a8e1c14463129104c7c84"}
-    respuesta = requests.get (url, params = parameters, headers = headers)
-    jugadores_2023 = {}
-    if respuesta.status_code == 200:
-        data = respuesta.json ()
-        jugadores_2023 = data ["response"]
-    else:
-        print("Err", respuesta.status_code)
-
-    return jugadores_2023
-
-def listar_equipos_2023 (equipos_2023:dict) -> None:
-    for i, equipo in enumerate (equipos_2023, start = 1):
-        nombre_equipo = equipo["team"]["name"]
-        id_equipo = equipo ["team"]["id"]
-        print(f"{i}. {nombre_equipo}")#(id : {id_equipo})
-
-def id_equipo(equipos_2023:dict, equipo_usuario:str) -> None:
-    equipos_2023 = equipos_liga_2023 ()
-    for equipo in equipos_2023:
-        if equipo_usuario == equipo["team"]["name"]:
-            id_equipo_usuario = equipo["team"]["id"]
-            print(equipo["team"])
-    return id_equipo_usuario 
-
-def mostrar_tabla_posiciones(temporada:int)->None:
-    url = "https://v3.football.api-sports.io/standings"
-    
-    params = {"league": "128","season": temporada}
-    
-    headers = {'x-rapidapi-host': "v3.football.api-sports.io",'x-rapidapi-key': "6560a6c96c1a8e1c14463129104c7c84"}
-    
-    respuesta = requests.get(url, params=params, headers=headers)
-    
-    posiciones={}
-    if respuesta.status_code == 200:
-        data = respuesta.json()
-        posiciones = data['response']
-        print("Posicion---Equipo---Pts---P.J---P.G---P.E---P.P")
-        for equipo in range(len(posiciones[0]['league']['standings'][0])):
-            print(posiciones[0]['league']['standings'][0][equipo]['rank'],"-"*3,posiciones[0]['league']['standings'][0][equipo]['team']['name'],"-"*3,posiciones[0]['league']['standings'][0][equipo]['points'],"-"*3,posiciones[0]['league']['standings'][0][equipo]['all']['played'],"-"*3,posiciones[0]['league']['standings'][0][equipo]['all']['win'],"-"*3,posiciones[0]['league']['standings'][0][equipo]['all']['draw'],"-"*3,posiciones[0]['league']['standings'][0][equipo]['all']['lose'])
-    else:
-        print("Error en la solicitud:", respuesta.status_code)
-
-def cargar_dinero_cuenta_usuario(id_usuario, dinero, fecha): 
-    
-    users = {} #dict donde se va a guardar la data del archivo
-    archivo_csv_users = 'data_users.csv'
-   
-    if os.path.isfile(archivo_csv_users):#verifica que exista el archivo de la data de los users
-
-       with open(archivo_csv_users, newline='',encoding="UTF-8") as archivo_csv:
-           csv_reader = csv.reader(archivo_csv, delimiter=',') 
-           next(csv_reader)#evita la primera linea, o sea el header
-           for row in csv_reader:
-               mail = row[0]
-               users[mail] = {'money': row[5]}
-
-    if id_usuario  in users[mail]:
-        dinero = input ("Dinero a cargar: ")
-        dinero = float(dinero)
-        dinero_en_cuenta = users[mail]['money'] 
-        users[mail]["money"] = dinero_en_cuenta + dinero
-    else:
-        print("Mail invalido")
-
-    print (f"Ahora posee {users[mail]['money']} disponible en su cuenta. ")
-    
-    #actualizar_dinero_en_cuenta() #actauliza csv usuarios con deposito (carga de dinero)
-    #registrar_nueva_transaccion() #en desarollo
-
-def equipos_liga_2023 () -> dict:
+def equipos_liga_2023 () -> dict:    #equipos de la liga 2023: decuelve dict con todos los datos
     url = "https://v3.football.api-sports.io/teams"
     parameters = {"league": "128", "season": 2023, "country": "Argentina"}
 
-    headers = {"x-rapidapi-host": "v3.football.api-sports.io","x-rapidapi-key": "6560a6c96c1a8e1c14463129104c7c84" }
+    headers = {"x-rapidapi-host": "v3.football.api-sports.io","x-rapidapi-key": "407726f0daca539a383c3c8ca8e4ca93" }
 
     respuesta = requests.get(url, params = parameters, headers = headers)
     equipos_2023 = {}
@@ -274,14 +207,89 @@ def equipos_liga_2023 () -> dict:
     else:
         print("Err", respuesta.status_code )
 
-    return dict_equipos_n_id,dict_equipos_id_n
+    return dict_equipos_n_id,dict_equipos_id_n, equipos_2023
+
+def jugadores_equipos ()-> dict:  #obtengo toda info de los jugadores, la guardo en un dict
+    url = "https://v3.football.api-sports.io/players"
+    parameters ={"league": "128", "season": 2023}
+    headers = {"x-rapidapi-host": "v3.football.api-sports.io","x-rapidapi-key": "407726f0daca539a383c3c8ca8e4ca93"}
+    respuesta = requests.get (url, params = parameters, headers = headers)
+    jugadores_2023 = {}
+    if respuesta.status_code == 200:
+        data = respuesta.json ()
+        jugadores_2023 = data ["response"]
+    else:
+        print("Err", respuesta.status_code)
+
+    return jugadores_2023
+
+def listar_equipos_2023 (equipos_2023:dict) -> None:  
+    for i in range (1, 29):       #enumerar los equipos, y los muestro por consola 
+        for  equipo in  equipos_2023:
+            nombre_equipo = equipo["team"]["name"]
+            print(f"{i}. {nombre_equipo}")
+
+def buscar_id_equipo(equipos_2023:dict, equipo_usuario:str) -> None:   #obtnego id del equipo que pide usuario y lo verifico
+    id_equipo_usuario = None
+    for equipo in equipos_2023:
+        if equipo_usuario == equipo["team"]["name"]:
+            id_equipo_usuario = equipo["team"]["id"]
+    return id_equipo_usuario 
+
+def mostrar_tabla_posiciones(temporada:int)->None:
+    url = "https://v3.football.api-sports.io/standings"
+    
+    params = {"league": "128","season": temporada}
+    
+    headers = {'x-rapidapi-host': "v3.football.api-sports.io",'x-rapidapi-key': "407726f0daca539a383c3c8ca8e4ca93"}
+    
+    respuesta = requests.get(url, params=params, headers=headers)
+    
+    posiciones={}
+    if respuesta.status_code == 200:
+        data = respuesta.json()
+        posiciones = data['response']
+        print("Posicion---Equipo---Pts---P.J---P.G---P.E---P.P")
+        for equipo in range(len(posiciones[0]['league']['standings'][0])):
+            print(posiciones[0]['league']['standings'][0][equipo]['rank'],"-"*3,posiciones[0]['league']['standings'][0][equipo]['team']['name'],"-"*3,posiciones[0]['league']['standings'][0][equipo]['points'],"-"*3,posiciones[0]['league']['standings'][0][equipo]['all']['played'],"-"*3,posiciones[0]['league']['standings'][0][equipo]['all']['win'],"-"*3,posiciones[0]['league']['standings'][0][equipo]['all']['draw'],"-"*3,posiciones[0]['league']['standings'][0][equipo]['all']['lose'])
+    else:
+        print("Error en la solicitud:", respuesta.status_code)
+
+# def cargar_dinero_cuenta_usuario(id_usuario, dinero, fecha): 
+    
+#     users = {} #dict donde se va a guardar la data del archivo
+#     archivo_csv_users = 'data_users.csv'
+   
+#     if os.path.isfile(archivo_csv_users):#verifica que exista el archivo de la data de los users
+#        with open(archivo_csv_users, newline='',encoding="UTF-8") as archivo_csv:
+#            csv_reader = csv.reader(archivo_csv, delimiter=',') 
+#            next(csv_reader)#evita la primera linea, o sea el header
+#            for row in csv_reader:
+#                mail = row[0]
+#                users[mail] = {'money': row[5]}
+
+#     if id_usuario  in users[mail]:
+#         dinero = input ("Dinero a cargar: ")
+#         dinero = float(dinero)
+#         dinero_en_cuenta = users[mail]['money'] 
+#         users[mail]["money"] = dinero_en_cuenta + dinero
+#     else:
+#         print("Mail invalido")
+
+#     print (f"Ahora posee {users[mail]['money']} disponible en su cuenta. ")
+    
+#     #actualizar_dinero_en_cuenta() 
+#     # #actauliza csv usuarios con deposito (carga de dinero)
+#     #registrar_nueva_transaccion() #en desarollo
+
+
 
 def escudo_cancha(id_team: int)->None:
 
     url = "https://v3.football.api-sports.io/teams?"
     parameters = {"id": "434","country": "Argentina","league": "128","season": "2023"}
 
-    headers = {"x-rapidapi-host": "v3.football.api-sports.io","x-rapidapi-key": "6560a6c96c1a8e1c14463129104c7c84" }
+    headers = {"x-rapidapi-host": "v3.football.api-sports.io","x-rapidapi-key": "407726f0daca539a383c3c8ca8e4ca93" }
 
     respuesta = requests.get(url, params = parameters, headers = headers)
 
@@ -325,7 +333,7 @@ def grafico(equipo:str)->None:
 
     parameters = {"league": "128","season": 2023,"team":id_equipo}
 
-    headers = {"x-rapidapi-host": "v3.football.api-sports.io", "x-rapidapi-key": "6560a6c96c1a8e1c14463129104c7c84" }
+    headers = {"x-rapidapi-host": "v3.football.api-sports.io", "x-rapidapi-key": "407726f0daca539a383c3c8ca8e4ca93" }
 
     respuesta = requests.get(url, params = parameters, headers = headers)
 
@@ -357,13 +365,13 @@ def grafico(equipo:str)->None:
         plt.ylabel("cant. goles")
         plt.show()
 
-def fechas_teams(id_team:int)->dict:
+def fechas_teams(id_team:int)->dict:  #saco dato fechas partidos, quien es local y quie es visitante
     
     url = "https://v3.football.api-sports.io/fixtures?"
 
     parameters = {"league": "128","season": 2023,"team":id_team}
 
-    headers = {"x-rapidapi-host": "v3.football.api-sports.io", "x-rapidapi-key": "6560a6c96c1a8e1c14463129104c7c84" }
+    headers = {"x-rapidapi-host": "v3.football.api-sports.io", "x-rapidapi-key": "407726f0daca539a383c3c8ca8e4ca93" }
 
     respuesta = requests.get(url, params = parameters, headers = headers)
     fechas = {}
@@ -386,18 +394,50 @@ def fechas_teams(id_team:int)->dict:
 
     return fechas,locales,visitantes
 
-def mostrar_teams()->None:
-    equipos_dict,equipos_id = equipos_liga_2023()
-
+def mostrar_ids()->None:   #imprime loa ids de los equipos de la liga (le cambie el nombre por el simple hecho de que no se llame igual a la de listar equipos, hacen cosas distintas)
+    equipos_2023,equipos_id = equipos_liga_2023()
     for i in equipos_id:
             print(f"--{equipos_id[i]}--")
 
-def apuesta()->None:
+
+# def validacion_fecha ():
+#     fecha_valida = False
+#     while not fecha_valida:
+#         fecha_actual = input ("Ingrese fecha en formato YYYY/MM/DD: ")
+#         if re.match (r"\d{4}/\d{2}/\d{2}", fecha_actual):
+#             fecha_valida = True
+#         else:
+#             print("Por favor ingrese la fecha en el formato dado (YYYY/MM/DD)")
+#             fecha_actual = input ("Ingrese fecha en formato YYYY/MM/DD: ")
+#     return fecha_actual
+
+def archivo_transacciones_usuarios (id_usuario:str,fecha_actual:str, resultado: str, importe: int) -> dict:
+    #mismo planteo e idea que el archivo usuarios
+    transacciones_usuarios = {}
+    nombre_archivo_transacciones= "transacciones.csv"
+    if  os.path.isfile (nombre_archivo_transacciones):
+        with open ("transacciones.csv", newline='', encoding="UTF-8") as archivo_csv:
+            csv_reader = csv.reader (archivo_csv, delimiter = ",")
+            next (csv_reader) 
+            for row in csv_reader:
+                mail = row[0]
+                transacciones_usuarios[mail] = {"fecha": row [1], "resultado": row [2], "importe": row[3]}
+
+
+    transacciones_usuarios [id_usuario] = {"fecha" : fecha_actual, "resultado": resultado, "importe" : importe}  #defino diccionario 
+    
+    with open("transacciones.csv", "w", newline= '', encoding="UTF-8") as archivo_csv: #aclaro con un 'w' que es un archivo de escritura
+        
+        csv_writer = csv.writer(archivo_csv, delimiter=',', quotechar='"',quoting=csv.QUOTE_NONNUMERIC)
+        csv_writer.writerow(["mail","fecha","resultado","importe"]) #---> escribir encabezado
+        for mail, data in transacciones_usuarios.items():
+            csv_writer.writerow({"mail": mail, "fecha": data["fecha"],"resultado": data["resultado"], "importe":data["importe"]})
+
+def apuesta(equipos_dict:dict, fechas_teams: dict, id_usuario: int)->None:
     
     print("Estos son los equipos que estan participando del torneo 2023")
-
-    mostrar_teams()
-    
+    listar_equipos_2023(equipos_liga_2023())
+    mostrar_ids()  
     equipos_dict,equipos_id = equipos_liga_2023()
 
     equipo_op = input("Elija por cual equipo desea apostar: ")
@@ -413,8 +453,10 @@ def apuesta()->None:
     fecha_elegida = input("Ingrese el num de fecha por el que desea apostar: ")
 
 def main()->None:
-   
-    """ print("Bienvenido a la mejor plataforma de apuestas futboleras")
+
+    #falta agregar la parte del menu 
+    
+    print("Bienvenido a la mejor plataforma de apuestas futboleras")
     ids_ingresados = []
     
     op = input("Desea acceder a la plataforma? y/n:")
@@ -440,23 +482,23 @@ def main()->None:
         elif usuario.lower()=="a":
             pass
 
-        op = input("Desea acceder de nuevo a la plataforma? y/n:")
+        # op = input("Desea acceder de nuevo a la plataforma? y/n:")
+        jugar = input ("Desea ver nuestras actuvidades disponibles? (y/n): ").lower()
 
-        fin = False
-        
-        equipos_2023 = equipos_liga_2023()
-        jugadores_2023 = jugadores_equipos ()
-        while not fin :
+        while jugar != "n":
+            equipos_2023 = equipos_liga_2023()
+            jugadores_2023 = jugadores_equipos ()
             imprimir_opciones()
             opcion_elegida = input ("Seleccione una opcion del menu: ")
             opcion_elegida = int(opcion_elegida)
             if opcion_elegida != 9  or  opcion_elegida != 0:
-                opcion_seleccionada(opcion_elegida, equipos_2023, jugadores_2023)
-                
+                opcion_seleccionada(opcion_elegida, equipos_2023, jugadores_2023)   
             else:
-                    fin = True
-                    print("¡Gracias por su vista! Dejanos una opinion: ")
-                    opinion = input ()"""
+                print("¡Gracias por su vista! Dejanos una opinion: ")
+                opinion = input ()
+        if jugar == "n":
+            print("¡Gracias por su vista! Dejanos una opinion: ")
+            opinion = input ()
 
 
 main()
