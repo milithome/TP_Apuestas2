@@ -448,6 +448,28 @@ def win_or_draw_f(id_partido:int)->int:
 
 
 
+def win_or_draw_f(id_partido:int)->int:
+
+    url = "https://v3.football.api-sports.io"
+
+    parameters = {"fixture":id_partido}
+
+    headers = {"x-rapidapi-host": "v3.football.api-sports.io", "x-rapidapi-key": "6560a6c96c1a8e1c14463129104c7c84" }
+
+    respuesta = requests.get(url, params = parameters, headers = headers)
+
+    if respuesta.status_code == 200:
+        data = respuesta.json()
+        predictions = data['response']
+
+        id_equipo_true = predictions['winner']['id']
+
+        win_or_draw = id_equipo_true
+
+    return win_or_draw
+
+
+
 def apuesta()->None:
     
     print("Estos son los equipos que estan participando del torneo 2023")
