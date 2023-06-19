@@ -77,20 +77,20 @@ def imprimir_opciones()->None:
     print ("8. Apuestas")
     print ("9. SALIR")
 
-def opcion_seleccionada (opcion_elegida:int, equipos_2023:dict, jugadores_2023:dict):   #"complletar resto datos de la API"
+def opcion_seleccionada (opcion_elegida:int, equipos_2023:dict, jugadores_2023:dict):   #agregar mas parametros si es necesario 
     
     equipos_dict,equipos_id = equipos_liga_2023()
 
     if opcion_elegida == 1:#finished
         print("--- Equipos de la Liga Profesional Temporada 2023---")
-        equipos_2023 = equipos_liga_2023_2()
+        equipos_2023 = equipos_liga_2023 ()
         listar_equipos_2023 (equipos_2023)
-        equipo_usuario = input("Seleccione equipo: ")
-        while equipo_usuario not in equipos_liga_2023:
-            print("Equipo inválido")
-        jugadores_2023 = jugadores_equipos ()
-        id_equipo_usuario = id_equipo(equipos_2023, equipo_usuario)
-        plantel_2023(id_equipo_usuario, jugadores_2023)
+        id_equipo_usuario = None # Valor predeterminado
+        while id_equipo_usuario is None:
+            equipo_usuario = input("Seleccione equipo: ").capitalize()
+            id_equipo_usuario = buscar_id_equipo(equipos_2023, equipo_usuario)
+            jugadores_2023 = jugadores_equipos()
+            plantel_2023(id_equipo_usuario, jugadores_2023)
 
     elif opcion_elegida == 2:#finished
         print("---Tabla de posiciones de la Liga profesional---")
@@ -149,16 +149,13 @@ def opcion_seleccionada (opcion_elegida:int, equipos_2023:dict, jugadores_2023:d
         print("Intente seleccionar una opcion del menu.")
         opcion_seleccionada(opcion_elegida,equipos_2023, jugadores_2023 )
     
-
 def plantel_2023(id_equipo:int, jugadores_2023:dict):
-    jugadores_2023 = jugadores_equipos()
     for jugador in jugadores_2023:
-        if (jugador['statistics'][0]['team']['id'] == id_equipo):
+        equipo = equipos_liga_2023()
+        id_equipo = equipo['team']['id']
+        print(f"\nPlantel de {equipo['team']['name']}:")
+        if jugador['statistics'][0]['team']['id'] == id_equipo:
             print(jugador['player']['name'])
-            equipos_2023 = equipos_liga_2023()
-            for equipo in equipos_2023:
-                id_equipo = equipo['team']['id']
-                print(f"\nPlantel de {equipo['team']['name']}:")
 
 def equipos_liga_2023_2 () -> dict:
     url = "https://v3.football.api-sports.io/teams"
@@ -179,10 +176,11 @@ def equipos_liga_2023_2 () -> dict:
         print("Err", respuesta.status_code )
     return equipos_2023
 
-def jugadores_equipos ()-> dict:
-    url = "https://v3.football.api-sports.io/teams"
+
+def jugadores_equipos ()-> dict:  #obtengo toda info de los jugadores, la guardo en un dict
+    url = "https://v3.football.api-sports.io/players"
     parameters ={"league": "128", "season": 2023}
-    headers = {"x-rapidapi-host": "v3.football.api-sports.io","x-rapidapi-key": "6560a6c96c1a8e1c14463129104c7c84"}
+    headers = {"x-rapidapi-host": "v3.football.api-sports.io","x-rapidapi-key": "407726f0daca539a383c3c8ca8e4ca93"}
     respuesta = requests.get (url, params = parameters, headers = headers)
     jugadores_2023 = {}
     if respuesta.status_code == 200:
@@ -193,18 +191,17 @@ def jugadores_equipos ()-> dict:
 
     return jugadores_2023
 
-def listar_equipos_2023 (equipos_2023:dict) -> None:
-    for i, equipo in enumerate (equipos_2023, start = 1):
-        nombre_equipo = equipo["team"]["name"]
-        id_equipo = equipo ["team"]["id"]
-        print(f"{i}. {nombre_equipo}")#(id : {id_equipo})
+def listar_equipos_2023 (equipos_2023:dict) -> None:  
+    for i in range (1, 29):       #enumerar los equipos, y los muestro por consola 
+        for  equipo in  equipos_2023:
+            nombre_equipo = equipo["team"]["name"]
+            print(f"{i}. {nombre_equipo}")
 
-def id_equipo(equipos_2023:dict, equipo_usuario:str) -> None:
-    equipos_2023 = equipos_liga_2023 ()
+def buscar_id_equipo(equipos_2023:dict, equipo_usuario:str) -> None:   #obtnego id del equipo que pide usuario y lo verifico
+    id_equipo_usuario = None
     for equipo in equipos_2023:
         if equipo_usuario == equipo["team"]["name"]:
             id_equipo_usuario = equipo["team"]["id"]
-            print(equipo["team"])
     return id_equipo_usuario 
 
 def mostrar_tabla_posiciones(temporada:int)->None:
@@ -392,10 +389,47 @@ def mostrar_teams()->None:
     for i in equipos_id:
             print(f"--{equipos_id[i]}--")
 
+
+#no muy segura validar las fechas asi
+# def validacion_fecha ():
+#     fecha_valida = False
+#     while not fecha_valida:
+#         fecha_actual = input ("Ingrese fecha en formato YYYY/MM/DD: ")
+#         if re.match (r"\d{4}/\d{2}/\d{2}", fecha_actual):
+#             fecha_valida = True
+#         else:
+#             print("Por favor ingrese la fecha en el formato dado (YYYY/MM/DD)")
+#             fecha_actual = input ("Ingrese fecha en formato YYYY/MM/DD: ")
+#     return fecha_actual
+
+def archivo_transacciones_usuarios (id_usuario:str,fecha_actual:str, resultado: str, importe: int) -> dict:
+    #mismo planteo e idea que el archivo usuarios
+    transacciones_usuarios = {}
+    nombre_archivo_transacciones= "transacciones.csv"
+    if  os.path.isfile (nombre_archivo_transacciones):
+        with open ("transacciones.csv", newline='', encoding="UTF-8") as archivo_csv:
+            csv_reader = csv.reader (archivo_csv, delimiter = ",")
+            next (csv_reader) 
+            for row in csv_reader:
+                mail = row[0]
+                transacciones_usuarios[mail] = {"fecha": row [1], "resultado": row [2], "importe": row[3]}
+
+
+    transacciones_usuarios [id_usuario] = {"fecha" : fecha_actual, "resultado": resultado, "importe" : importe}  #defino diccionario 
+    
+    with open("transacciones.csv", "w", newline= '', encoding="UTF-8") as archivo_csv: #aclaro con un 'w' que es un archivo de escritura
+        
+        csv_writer = csv.writer(archivo_csv, delimiter=',', quotechar='"',quoting=csv.QUOTE_NONNUMERIC)
+        csv_writer.writerow(["mail","fecha","resultado","importe"]) #---> escribir encabezado
+        for mail, data in transacciones_usuarios.items():
+            csv_writer.writerow({"mail": mail, "fecha": data["fecha"],"resultado": data["resultado"], "importe":data["importe"]})
+
+
 def apuesta()->None:
     
     print("Estos son los equipos que estan participando del torneo 2023")
-
+    listar_equipos_2023(equipos_liga_2023_2())
+     
     mostrar_teams()
     
     equipos_dict,equipos_id = equipos_liga_2023()
@@ -414,7 +448,7 @@ def apuesta()->None:
 
 def main()->None:
    
-    """ print("Bienvenido a la mejor plataforma de apuestas futboleras")
+    print("Bienvenido a la mejor plataforma de apuestas futboleras")
     ids_ingresados = []
     
     op = input("Desea acceder a la plataforma? y/n:")
@@ -440,23 +474,22 @@ def main()->None:
         elif usuario.lower()=="a":
             pass
 
-        op = input("Desea acceder de nuevo a la plataforma? y/n:")
+        jugar = input ("Desea ver nuestras actuvidades disponibles? (y/n): ").lower()
 
-        fin = False
-        
-        equipos_2023 = equipos_liga_2023()
-        jugadores_2023 = jugadores_equipos ()
-        while not fin :
+        while jugar != "n":
+            equipos_2023 = equipos_liga_2023()
+            jugadores_2023 = jugadores_equipos ()
             imprimir_opciones()
             opcion_elegida = input ("Seleccione una opcion del menu: ")
             opcion_elegida = int(opcion_elegida)
             if opcion_elegida != 9  or  opcion_elegida != 0:
-                opcion_seleccionada(opcion_elegida, equipos_2023, jugadores_2023)
-                
+                opcion_seleccionada(opcion_elegida, equipos_2023, jugadores_2023)   
             else:
-                    fin = True
-                    print("¡Gracias por su vista! Dejanos una opinion: ")
-                    opinion = input ()"""
+                print("¡Gracias por su vista! Dejanos una opinion: ")
+                opinion = input ()
+        if jugar == "n":
+            print("¡Gracias por su vista! Dejanos una opinion: ")
+            opinion = input ()
 
 
 main()
