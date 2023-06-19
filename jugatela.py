@@ -372,7 +372,7 @@ def fechas_teams(id_team:int)->dict:
     if respuesta.status_code == 200:
         data = respuesta.json()
         fechas = data['response']
-        print(f"Fechas de Temporada 2023:")
+        print(f"Fechas de Temporada 2023 ( se lee asi Local vs Visitante):")
 
         for fecha in range(len(fechas[0]['fixture'])):
             locales[fechas[0]['fixture']['teams']['home']['name']]= fechas[0]['fixture']['teams']['home']['id']
@@ -403,14 +403,43 @@ def apuesta()->None:
     equipo_op = input("Elija por cual equipo desea apostar: ")
     while(equipo_op not in equipos_dict.values()):
         print("Opcion incorrecta, intente de nuevo")
-        equipo_op = input("Elija por cual equipo desea apostar(ingrese el numero): ")
+        equipo_op = input("Escriba por el equipo que desea apostar: ")
 
     id_equipo = equipos_dict[equipo_op]
 
     #funcion de buscar fechas
     dict_fechas,dict_locales,dict_visitantes = fechas_teams(id_equipo)
+    fecha_elegida:int = input("Ingrese el num de fecha por el que desea apostar: ")
 
-    fecha_elegida = input("Ingrese el num de fecha por el que desea apostar: ")
+    while(fecha_elegida not in dict_fechas.keys()):
+        print("Fecha inexistente, intentelo de nuevo")
+        dict_fechas,dict_locales,dict_visitantes = fechas_teams(id_equipo)
+        fecha_elegida:int = input("Ingrese el num de fecha por el que desea apostar: ")
+
+    partido = dict_fechas[fecha_elegida]
+
+    apuesta = input("Ingrese el numero correspondiente al tipo de apuesta: \n 1- Gana Local/Visitante \n 2-Empatan\n ")
+    while(apuesta not in (1,2)):
+        print("Opcion invalida, intente de nuevo.")
+        apuesta = input("Ingrese el numero correspondiente al tipo de apuesta: \n 1- Gana Local/Visitante \n 2-Empatan\n ")
+
+    dado_resultado = random.randrange(1,4)
+    plata_apostada = input("Ingrese monto de dinero que desea apostar")
+
+    if apuesta==1:
+        print("Usted a decidido por apostarle a un ganador.")
+        loc_vist:int = input("Elija si quiere apostar por el: \n 1-local \n 2-visitante")
+        while(apuesta not in (1,2)):
+            print("Opcion invalida, intente de nuevo.")
+            loc_vist:int = input("Elija si quiere apostar por el: \n 1-local \n 2-visitante")
+        if loc_vist == 1:
+            pass
+        elif loc_vist==2:
+            pass
+
+    elif apuesta==2:
+        print(f"Usted a decidido apostar que {partido[0]}vs{partido[1]} empataran en la fecha {fecha_elegida}")
+
 
 def main()->None:
    
