@@ -366,6 +366,7 @@ def fechas_teams(id_team:int)->dict:
     fechas = {}
     locales = {}
     visitantes = {}
+    id_fecha = {}
     if respuesta.status_code == 200:
         data = respuesta.json()
         fechas = data['response']
@@ -374,14 +375,15 @@ def fechas_teams(id_team:int)->dict:
         for fecha in range(len(fechas[0]['fixture'])):
             locales[fechas[0]['fixture']['teams']['home']['name']]= fechas[0]['fixture']['teams']['home']['id']
             visitantes[fechas[0]['fixture']['teams']['away']['name']] = fechas[0]['fixture']['teams']['away']['id'] 
-            fechas[fecha] = [locales[fechas[0]['fixture']['teams']['home']['name']],visitantes[fechas[0]['fixture']['teams']['away']['name']]]           
+            fechas[fecha] = [locales[fechas[0]['fixture']['teams']['home']['name']],visitantes[fechas[0]['fixture']['teams']['away']['name']]]     
+            id_fecha[[locales[fechas[0]['fixture']['teams']['home']['name']],visitantes[fechas[0]['fixture']['teams']['away']['name']]]] = fechas[0]['fixture']['id']  
         
         for i in (fechas):
             print(f"Fecha {i+1}: {fechas[i][0]} vs {fechas[i][1]}")
 
     else: print("Error al traer los datos")
 
-    return fechas,locales,visitantes
+    return fechas,locales,visitantes,id_fecha
 
 def mostrar_teams()->None:
     equipos_dict,equipos_id = equipos_liga_2023()
@@ -424,6 +426,27 @@ def archivo_transacciones_usuarios (id_usuario:str,fecha_actual:str, resultado: 
         for mail, data in transacciones_usuarios.items():
             csv_writer.writerow({"mail": mail, "fecha": data["fecha"],"resultado": data["resultado"], "importe":data["importe"]})
 
+def win_or_draw_f(id_partido:int)->int:
+
+    url = "https://v3.football.api-sports.io"
+
+    parameters = {"fixture":id_partido}
+
+    headers = {"x-rapidapi-host": "v3.football.api-sports.io", "x-rapidapi-key": "6560a6c96c1a8e1c14463129104c7c84" }
+
+    respuesta = requests.get(url, params = parameters, headers = headers)
+
+    if respuesta.status_code == 200:
+        data = respuesta.json()
+        predictions = data['response']
+
+        id_equipo_true = predictions['winner']['id']
+
+        win_or_draw = id_equipo_true
+
+    return win_or_draw
+
+
 
 def apuesta()->None:
     
@@ -442,7 +465,7 @@ def apuesta()->None:
     id_equipo = equipos_dict[equipo_op]
 
     #funcion de buscar fechas
-    dict_fechas,dict_locales,dict_visitantes = fechas_teams(id_equipo)
+    dict_fechas,dict_locales,dict_visitantes,ids_fechas = fechas_teams(id_equipo)
     fecha_elegida:int = input("Ingrese el num de fecha por el que desea apostar: ")
 
     while(fecha_elegida not in dict_fechas.keys()):
@@ -450,30 +473,54 @@ def apuesta()->None:
         dict_fechas,dict_locales,dict_visitantes = fechas_teams(id_equipo)
         fecha_elegida:int = input("Ingrese el num de fecha por el que desea apostar: ")
 
-    partido = dict_fechas[fecha_elegida]
+    partido:list = dict_fechas[fecha_elegida]
 
-    apuesta = input("Ingrese el numero correspondiente al tipo de apuesta: \n 1- Gana Local/Visitante \n 2-Empatan\n ")
-    while(apuesta not in (1,2)):
+    id_partido:int = ids_fechas[partido]
+
+    apuesta:int = input("Ingrese el numero correspondiente al tipo de apuesta: \n 1- Gana Local/Visitante \n 2-Empatan\n ")
+    while(apuesta not in (1,2,3)):
         print("Opcion invalida, intente de nuevo.")
-        apuesta = input("Ingrese el numero correspondiente al tipo de apuesta: \n 1- Gana Local/Visitante \n 2-Empatan\n ")
+        apuesta = input("Ingrese el numero correspondiente al tipo de apuesta: \n 1- Gana Local \n 2-Empatan\n 3-Gana Visitate")
 
-    dado_resultado = random.randrange(1,4)
-    plata_apostada = input("Ingrese monto de dinero que desea apostar")
+    casos = {1:"gana local",2:"empatan",3:"gana visitante"}
 
-    if apuesta==1:
-        print("Usted a decidido por apostarle a un ganador.")
-        loc_vist:int = input("Elija si quiere apostar por el: \n 1-local \n 2-visitante")
-        while(apuesta not in (1,2)):
-            print("Opcion invalida, intente de nuevo.")
-            loc_vist:int = input("Elija si quiere apostar por el: \n 1-local \n 2-visitante")
-        if loc_vist == 1:
-            pass
-        elif loc_vist==2:
-            pass
+    print(f"Usted a decidido apostar que {partido[0]}vs{partido[1]}, {casos[apuesta]} en la fecha {fecha_elegida}")
 
-    elif apuesta==2:
-        print(f"Usted a decidido apostar que {partido[0]}vs{partido[1]} empataran en la fecha {fecha_elegida}")
+    dado_resultado:int = random.randrange(1,4)#para definir si gana L/V o empatan
+    cant_q_se_paga:int = random.randrange(1,5)#cuanto se le paga al ganador respecto a lo apostado
+    plata_apostada:float = input("Ingrese monto de dinero que desea apostar")
 
+    local = dict_locales[dict_fechas[fecha_elegida][0]]
+    visitante = dict_locales[dict_fechas[fecha_elegida][1]]
+
+    id_win_or_draw = win_or_draw_f(id_partido) #win_or_draw=true para el id del equipo que devuelve
+
+
+
+    if dado_resultado==apuesta:
+
+        print("Ha ganado la apuesta!")
+        if dado_resultado==1 and id_win_or_draw == local:#aposto al local y tiene true el w_o_d
+            pago = plata_apostada*(cant_q_se_paga)
+        elif dado_resultado==1 and id_win_or_draw!=local:#aposoto al local pero estaba False para local
+            pago = plata_apostada*(cant_q_se_paga/10)
+        elif dado_resultado==2:#aposto a que empataban, gano tarifa de empate
+            pago = plata_apostada*(0.5)
+        elif dado_resultado==3 and id_win_or_draw == visitante:#aposto a visitante y el true estaba para visitante
+            pago = plata_apostada*(cant_q_se_paga)
+        elif dado_resultado==3 and id_win_or_draw!=visitante:#aposto al visitante pero estaba False para visitante
+            pago = plata_apostada*(cant_q_se_paga/10)
+
+        print(f"Dinero ganado: {pago}")
+
+        bet = "+" #como resulto la apuesta 
+
+    else: 
+        print("Lo sentimos, usted a perdido la apuesta")
+        bet = "-"#como resulto la apuesta 
+
+    #falta verificar que el usuario tenga la plata en cuenta para apostar la cant que este apostando 
+    #falta la parte de transacciones aca, tamb la de user_data(o sea agregar a la parte de bets lo que resulto de la variable bet y agregar la plata ganada o perdida a la cuenta)
 
 def main()->None:
    
