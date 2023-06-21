@@ -426,27 +426,6 @@ def archivo_transacciones_usuarios (id_usuario:str,fecha_actual:str, resultado: 
         for mail, data in transacciones_usuarios.items():
             csv_writer.writerow({"mail": mail, "fecha": data["fecha"],"resultado": data["resultado"], "importe":data["importe"]})
 
-def win_or_draw_f(id_partido:int)->int:
-
-    url = "https://v3.football.api-sports.io"
-
-    parameters = {"fixture":id_partido}
-
-    headers = {"x-rapidapi-host": "v3.football.api-sports.io", "x-rapidapi-key": "6560a6c96c1a8e1c14463129104c7c84" }
-
-    respuesta = requests.get(url, params = parameters, headers = headers)
-
-    if respuesta.status_code == 200:
-        data = respuesta.json()
-        predictions = data['response']
-
-        id_equipo_true = predictions['winner']['id']
-
-        win_or_draw = id_equipo_true
-
-    return win_or_draw
-
-
 
 def win_or_draw_f(id_partido:int)->int:
 
@@ -458,6 +437,7 @@ def win_or_draw_f(id_partido:int)->int:
 
     respuesta = requests.get(url, params = parameters, headers = headers)
 
+    predictions = {}
     if respuesta.status_code == 200:
         data = respuesta.json()
         predictions = data['response']
@@ -467,20 +447,18 @@ def win_or_draw_f(id_partido:int)->int:
         win_or_draw = id_equipo_true
 
     return win_or_draw
-
 
 
 def apuesta()->None:
     
     print("Estos son los equipos que estan participando del torneo 2023")
-    listar_equipos_2023(equipos_liga_2023_2())
      
     mostrar_teams()
     
     equipos_dict,equipos_id = equipos_liga_2023()
 
     equipo_op = input("Elija por cual equipo desea apostar: ")
-    while(equipo_op not in equipos_dict.values()):
+    while(equipo_op not in equipos_id.values()):
         print("Opcion incorrecta, intente de nuevo")
         equipo_op = input("Escriba por el equipo que desea apostar: ")
 
@@ -499,7 +477,7 @@ def apuesta()->None:
 
     id_partido:int = ids_fechas[partido]
 
-    apuesta:int = input("Ingrese el numero correspondiente al tipo de apuesta: \n 1- Gana Local/Visitante \n 2-Empatan\n ")
+    apuesta:int = input("Ingrese el numero correspondiente al tipo de apuesta: \n 1- Gana Local \n 2-Empatan\n 3-Gana Visitate")
     while(apuesta not in (1,2,3)):
         print("Opcion invalida, intente de nuevo.")
         apuesta = input("Ingrese el numero correspondiente al tipo de apuesta: \n 1- Gana Local \n 2-Empatan\n 3-Gana Visitate")
@@ -510,21 +488,19 @@ def apuesta()->None:
 
     dado_resultado:int = random.randrange(1,4)#para definir si gana L/V o empatan
     cant_q_se_paga:int = random.randrange(1,5)#cuanto se le paga al ganador respecto a lo apostado
-    plata_apostada:float = input("Ingrese monto de dinero que desea apostar")
+    plata_apostada:float = input("Ingrese monto de dinero que desea apostar: ")
 
     local = dict_locales[dict_fechas[fecha_elegida][0]]
-    visitante = dict_locales[dict_fechas[fecha_elegida][1]]
+    visitante = dict_visitantes[dict_fechas[fecha_elegida][1]]
 
     id_win_or_draw = win_or_draw_f(id_partido) #win_or_draw=true para el id del equipo que devuelve
-
-
 
     if dado_resultado==apuesta:
 
         print("Ha ganado la apuesta!")
         if dado_resultado==1 and id_win_or_draw == local:#aposto al local y tiene true el w_o_d
             pago = plata_apostada*(cant_q_se_paga/10)
-        elif dado_resultado==1 and id_win_or_draw!=local:#aposoto al local pero estaba False para local
+        elif dado_resultado==1 and id_win_or_draw!=local:#aposto al local pero estaba False para local
             pago = plata_apostada*(cant_q_se_paga)
         elif dado_resultado==2:#aposto a que empataban, gano tarifa de empate
             pago = plata_apostada*(0.5)
@@ -549,7 +525,11 @@ def apuesta()->None:
 
 def main()->None:
    
-    print("Bienvenido a la mejor plataforma de apuestas futboleras")
+
+    mostrar_tabla_posiciones(2022)
+    #apuesta()
+
+    """print("Bienvenido a la mejor plataforma de apuestas futboleras")
     ids_ingresados = []
     
     op = input("Desea acceder a la plataforma? y/n:")
@@ -591,6 +571,6 @@ def main()->None:
         if jugar == "n":
             print("¡Gracias por su vista! Dejanos una opinion: ")
             opinion = input ()
-
+"""
 
 main()
