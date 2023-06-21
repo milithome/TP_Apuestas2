@@ -523,15 +523,15 @@ def apuesta()->None:
 
         print("Ha ganado la apuesta!")
         if dado_resultado==1 and id_win_or_draw == local:#aposto al local y tiene true el w_o_d
-            pago = plata_apostada*(cant_q_se_paga)
-        elif dado_resultado==1 and id_win_or_draw!=local:#aposoto al local pero estaba False para local
             pago = plata_apostada*(cant_q_se_paga/10)
+        elif dado_resultado==1 and id_win_or_draw!=local:#aposoto al local pero estaba False para local
+            pago = plata_apostada*(cant_q_se_paga)
         elif dado_resultado==2:#aposto a que empataban, gano tarifa de empate
             pago = plata_apostada*(0.5)
         elif dado_resultado==3 and id_win_or_draw == visitante:#aposto a visitante y el true estaba para visitante
-            pago = plata_apostada*(cant_q_se_paga)
-        elif dado_resultado==3 and id_win_or_draw!=visitante:#aposto al visitante pero estaba False para visitante
             pago = plata_apostada*(cant_q_se_paga/10)
+        elif dado_resultado==3 and id_win_or_draw!=visitante:#aposto al visitante pero estaba False para visitante
+            pago = plata_apostada*(cant_q_se_paga)
 
         print(f"Dinero ganado: {pago}")
 
