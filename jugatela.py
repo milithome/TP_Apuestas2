@@ -408,37 +408,40 @@ def cargar_dinero_cuenta_usuario(id_usuario, dinero, fecha):
     modificar_dinero_cuenta_usuario (id_usuario, dinero, fecha) #guardo plata agregada en cuenta usuario
 
 
-def fechas_teams(id_team:int)->dict:
-    #PRE: datos api de los partidos a jugar
-    #POST: devuelve 3 dicts con fechas, equipos localaes y equipos visitantes
+def fechas_teams(id_team: int) -> dict:
     url = "https://v3.football.api-sports.io/fixtures?"
-
-    parameters = {"league": "128","season": 2023,"team":id_team}
-
-    headers = {"x-rapidapi-host": "v3.football.api-sports.io", "x-rapidapi-key": "6560a6c96c1a8e1c14463129104c7c84" }
-
-    respuesta = requests.get(url, params = parameters, headers = headers)
-    fechas = {}
+    parameters = {"league": "128", "season": 2023, "team": id_team}
+    headers = {"x-rapidapi-host": "v3.football.api-sports.io", "x-rapidapi-key": "407726f0daca539a383c3c8ca8e4ca93"}
+    respuesta = requests.get(url, params=parameters, headers=headers)
+    dict_fechas = {}
     locales = {}
     visitantes = {}
     id_fecha = {}
+
     if respuesta.status_code == 200:
         data = respuesta.json()
-        fechas = data['response']
-        print(f"Fechas de Temporada 2023 ( se lee asi Local vs Visitante):")
+        fixtures = data['response']
 
-        for fecha in range(len(fechas[0]['fixture'])):
-            locales[fechas[0]['fixture']['teams']['home']['name']]= fechas[0]['fixture']['teams']['home']['id']
-            visitantes[fechas[0]['fixture']['teams']['away']['name']] = fechas[0]['fixture']['teams']['away']['id'] 
-            fechas[fecha] = [fechas[0]['fixture']['teams']['home']['name'],fechas[0]['fixture']['teams']['away']['name']]     
-            id_fecha[fechas[0]['fixture']['teams']['home']['name'],fechas[0]['fixture']['teams']['away']['name']] = fechas[0]['fixture']['id']  
-        
-        for i in (fechas):
-            print(f"Fecha {i+1}: {fechas[i][0]} vs {fechas[i][1]}")
+        print("Fechas de Temporada 2023 (se lee así Local vs Visitante):")
+        for fixture in fixtures:
+            fecha_entera = fixture['fixture']['date']
+            fecha = fecha_entera.split("T")[0]
+            local = fixture['teams']['home']['name']
+            visitante = fixture['teams']['away']['name']
 
-    else: print("Error al traer los datos")
+            print(f"Fecha: {fecha}- {local} (L) vs {visitante}(V)")
 
-    return fechas,locales,visitantes,id_fecha
+            dict_fechas[fixture['fixture']['id']] = {'fecha': fecha, 'local': local, 'visitante': visitante}
+            locales[local] = fixture['teams']['home']['id']
+            visitantes[visitante] = fixture['teams']['away']['id']
+            # dict_fechas[fixture['fixture']['id']] = [locales[local], visitantes[visitante]]
+            id_fecha[(locales[local], visitantes[visitante])] = fixture['fixture']['id']
+
+    else:
+        print("Error al traer los datos")
+
+    return dict_fechas, locales, visitantes,id_fecha
+
 
 def mostrar_teams()->None:
     equipos_dict,equipos_id = equipos_liga_2023()
@@ -865,3 +868,36 @@ main()
 
     # registrar_transacciones_usuarios (id_usuario,fecha, "pierde", " (-)", plata_apostada)
     # modificar_dinero_cuenta_usuario (id_usuario , float(-plata_apostada), fecha)
+
+#base dict de fechas
+    # def fechas_teams(id_team:int)->dict:
+#     #PRE: datos api de los partidos a jugar
+#     #POST: devuelve 3 dicts con fechas, equipos localaes y equipos visitantes
+#     url = "https://v3.football.api-sports.io/fixtures?"
+
+#     parameters = {"league": "128","season": 2023,"team":id_team}
+
+#     headers = {"x-rapidapi-host": "v3.football.api-sports.io", "x-rapidapi-key": "6560a6c96c1a8e1c14463129104c7c84" }
+
+#     respuesta = requests.get(url, params = parameters, headers = headers)
+#     fechas = {}
+#     locales = {}
+#     visitantes = {}
+#     id_fecha = {}
+#     if respuesta.status_code == 200:
+#         data = respuesta.json()
+#         fechas = data['response']
+#         print(f"Fechas de Temporada 2023 ( se lee asi Local vs Visitante):")
+
+#         for fecha in range(len(fechas[0]['fixture'])):
+#             locales[fechas[0]['fixture']['teams']['home']['name']]= fechas[0]['fixture']['teams']['home']['id']
+#             visitantes[fechas[0]['fixture']['teams']['away']['name']] = fechas[0]['fixture']['teams']['away']['id'] 
+#             fechas[fecha] = [fechas[0]['fixture']['teams']['home']['name'],fechas[0]['fixture']['teams']['away']['name']]     
+#             id_fecha[fechas[0]['fixture']['teams']['home']['name'],fechas[0]['fixture']['teams']['away']['name']] = fechas[0]['fixture']['id']  
+        
+#         for i in (fechas):
+#             print(f"Fecha {i+1}: {fechas[i][0]} vs {fechas[i][1]}")
+
+#     else: print("Error al traer los datos")
+
+#     return fechas,locales,visitantes,id_fecha
