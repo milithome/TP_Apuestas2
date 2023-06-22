@@ -376,7 +376,7 @@ def fechas_teams(id_team:int)->dict:
             locales[fechas[0]['fixture']['teams']['home']['name']]= fechas[0]['fixture']['teams']['home']['id']
             visitantes[fechas[0]['fixture']['teams']['away']['name']] = fechas[0]['fixture']['teams']['away']['id'] 
             fechas[fecha] = [fechas[0]['fixture']['teams']['home']['name'],fechas[0]['fixture']['teams']['away']['name']]     
-            id_fecha[[locales[fechas[0]['fixture']['teams']['home']['name']],visitantes[fechas[0]['fixture']['teams']['away']['name']]]] = fechas[0]['fixture']['id']  
+            id_fecha[fechas[0]['fixture']['teams']['home']['name'],fechas[0]['fixture']['teams']['away']['name']] = fechas[0]['fixture']['id']  
         
         for i in (fechas):
             print(f"Fecha {i+1}: {fechas[i][0]} vs {fechas[i][1]}")
