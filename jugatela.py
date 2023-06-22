@@ -41,6 +41,8 @@ def user_registration(id_usuarios:list)->str:
     return mail
 
 def archivo_csv_r_w_data_users(new_mail:str,new_name:str,new_password:str,new_money:float)->None:
+    #PRECONDICIONES: CREAR ARCHIVO DATA USUARIO
+    #POSTCONDICIONES: ARCHIVO GUARDA DATA USUARIO
 
     users = {} #dict donde se va a guardar la data del archivo
     archivo_csv_users = 'data_users.csv'
@@ -63,7 +65,27 @@ def archivo_csv_r_w_data_users(new_mail:str,new_name:str,new_password:str,new_mo
         for mail, data in users.items():
             csv_writer.writerow([mail,data['name'],data['password'],data['bets'],data['date'],data['money']])
 
+
+def inicio_sesion () -> str: 
+    #PRECONDICIONES: USUARIO YA INGRESADO SISTEMA INICIA SESION
+    #POSTCONDICIONES: DEVUELVE  MAIL  Y CONTRASEÑA  GUARDADO EN EL ARCHIVO DATA_USERS (USERS)
+
+   users = {} #dict donde se va a guardar la data del archivo
+   archivo_csv_users = 'data_users.csv'
+
+   if os.path.isfile(archivo_csv_users):#verifica que exista el archivo de la data de los users
+       with open(archivo_csv_users, newline='',encoding="UTF-8") as archivo_csv:
+           csv_reader = csv.reader(archivo_csv, delimiter=',') 
+           next(csv_reader)#evita la primera linea, o sea el header
+           for row in csv_reader:
+               mail = row[0]
+               users[mail] = {'name':row[1],'password':row[2]}
+   return users
+
+
 def imprimir_opciones()->None:
+    #PRECONDICIONES: IMPRIMIR MENU OPCIONES
+    #POSTCONDICIONES: MOSTRAR OPCIONES USUARIO
 
     print("Bienvenido a la mejor plataforma de apuestas futboleras")
     print ("Seleccione una opcion: ")
@@ -78,19 +100,20 @@ def imprimir_opciones()->None:
     print ("9. SALIR")
 
 def opcion_seleccionada (opcion_elegida:int, equipos_2023:dict, jugadores_2023:dict):   #agregar mas parametros si es necesario 
-    
+    #PRECONDICIONES: USARIO ELIGE OPCION 
+    #POSTCONDICIONES: EJECUTO OPCION ELEGIDA    
     equipos_dict,equipos_id = equipos_liga_2023()
 
     if opcion_elegida == 1:#finished
         print("--- Equipos de la Liga Profesional Temporada 2023---")
         equipos_2023 = equipos_liga_2023 ()
         listar_equipos_2023 (equipos_2023)
-        id_equipo_usuario = None # Valor predeterminado
+        id_equipo_usuario = None # valor predeterminado
         while id_equipo_usuario is None:
             equipo_usuario = input("Seleccione equipo: ").capitalize()
             id_equipo_usuario = buscar_id_equipo(equipos_2023, equipo_usuario)
             jugadores_2023 = jugadores_equipos()
-            plantel_2023(id_equipo_usuario, jugadores_2023)
+            plantel_2023(id_equipo_usuario, jugadores_2023, equipo_usuario)
 
     elif opcion_elegida == 2:#finished
         print("---Tabla de posiciones de la Liga profesional---")
@@ -131,33 +154,38 @@ def opcion_seleccionada (opcion_elegida:int, equipos_2023:dict, jugadores_2023:d
     
     elif opcion_elegida == 6:
         print ("--- Usuario que más dinero apostó ---")
-        #usuario_mas_aposto () 
-        #basarme transacciones.csv
+        usuario_mas_aposto (id_usuario, "", "") 
+        
 
     elif opcion_elegida == 7:
         print ("--- Usuario que más veces gano ---")
-        #usuario_ganador ()
-        #registo en transacciones.csv / data_users.csv
+        usuario_mas_veces_gano(id_usuario, "", "")
 
     elif opcion_elegida == 8:
         print("--- APUESTAS ---")
         apuesta()
-        #registro si gana/deposita (+), si pierde (-) en transacciones
-        #voy al data.csv al final para sumar o restar el dinero, ya con resultado de la apuesta
+       
 
     else:
         print("Intente seleccionar una opcion del menu.")
         opcion_seleccionada(opcion_elegida,equipos_2023, jugadores_2023 )
-    
-def plantel_2023(id_equipo:int, jugadores_2023:dict):
+
+
+def plantel_2023(id_equipo:int, jugadores_2023:dict, equipo_usuario: str):
+    #PRECONDICIONES: EVALUA EQUIPO INGRESADO COINCIDE CON EL GUARDADO EN EL DICT EQUIPOS 2023
+    #POSTCONDICIONES: IMPRIME PLANTEL
+
+    print(f"\nPlantel de {equipo_usuario}  con ID {id_equipo}:")
     for jugador in jugadores_2023:
-        equipo = equipos_liga_2023()
-        id_equipo = equipo['team']['id']
-        print(f"\nPlantel de {equipo['team']['name']}:")
         if jugador['statistics'][0]['team']['id'] == id_equipo:
-            print(jugador['player']['name'])
+            print(jugador['player']['name'])       
+
+
 
 def equipos_liga_2023_2 () -> dict:
+    #PRECONDICIONES: BUSCO DATO API SOBRE EQUIPOS LIGA 2023
+    #POSTCONDICIONES: DEVUELVE DICT CON LA INFO DE LOS EQUIPOS_2023    
+    
     url = "https://v3.football.api-sports.io/teams"
     
     parameters = {"league": "128", "season": 2023, "country": "Argentina"}
@@ -178,6 +206,9 @@ def equipos_liga_2023_2 () -> dict:
 
 
 def jugadores_equipos ()-> dict:  #obtengo toda info de los jugadores, la guardo en un dict
+    #PRECONDICIONES: BUSCO DATO API SOBRE JUGADORES 2023
+    #POSTCONDICIONES: DEVUELVE DICT CON LA INFO DE LOS JUGADORES    
+    
     url = "https://v3.football.api-sports.io/players"
     parameters ={"league": "128", "season": 2023}
     headers = {"x-rapidapi-host": "v3.football.api-sports.io","x-rapidapi-key": "407726f0daca539a383c3c8ca8e4ca93"}
@@ -191,20 +222,32 @@ def jugadores_equipos ()-> dict:  #obtengo toda info de los jugadores, la guardo
 
     return jugadores_2023
 
-def listar_equipos_2023 (equipos_2023:dict) -> None:  
-    for i in range (1, 29):       #enumerar los equipos, y los muestro por consola 
-        for  equipo in  equipos_2023:
+def listar_equipos_2023 (equipos_2023:dict) -> None: 
+    # PRE : enumerar los equipos
+    # POST:  muestro por consola 
+         
+    i = 1
+    for  equipo in  equipos_2023:
             nombre_equipo = equipo["team"]["name"]
             print(f"{i}. {nombre_equipo}")
+            i += 1    
 
 def buscar_id_equipo(equipos_2023:dict, equipo_usuario:str) -> None:   #obtnego id del equipo que pide usuario y lo verifico
+#PRE: obtnego id del equipo que pide usuario y lo verifico
+#POST : devuelve id_equipo, del equipo ingresado por el usuario
+   
     id_equipo_usuario = None
     for equipo in equipos_2023:
         if equipo_usuario == equipo["team"]["name"]:
             id_equipo_usuario = equipo["team"]["id"]
     return id_equipo_usuario 
 
+
 def mostrar_tabla_posiciones(temporada:int)->None:
+    #PRE: busco info en la api sobre las posciones de la liga arg
+    #POST : muestra tabla posciones
+
+
     url = "https://v3.football.api-sports.io/standings"
     
     params = {"league": "128","season": temporada}
@@ -223,34 +266,11 @@ def mostrar_tabla_posiciones(temporada:int)->None:
     else:
         print("Error en la solicitud:", respuesta.status_code)
 
-def cargar_dinero_cuenta_usuario(id_usuario, dinero, fecha): 
-    
-    users = {} #dict donde se va a guardar la data del archivo
-    archivo_csv_users = 'data_users.csv'
-   
-    if os.path.isfile(archivo_csv_users):#verifica que exista el archivo de la data de los users
-
-       with open(archivo_csv_users, newline='',encoding="UTF-8") as archivo_csv:
-           csv_reader = csv.reader(archivo_csv, delimiter=',') 
-           next(csv_reader)#evita la primera linea, o sea el header
-           for row in csv_reader:
-               mail = row[0]
-               users[mail] = {'money': row[5]}
-
-    if id_usuario  in users[mail]:
-        dinero = input ("Dinero a cargar: ")
-        dinero = float(dinero)
-        dinero_en_cuenta = users[mail]['money'] 
-        users[mail]["money"] = dinero_en_cuenta + dinero
-    else:
-        print("Mail invalido")
-
-    print (f"Ahora posee {users[mail]['money']} disponible en su cuenta. ")
-    
-    #actualizar_dinero_en_cuenta() #actauliza csv usuarios con deposito (carga de dinero)
-    #registrar_nueva_transaccion() #en desarollo
 
 def equipos_liga_2023 () -> dict:
+    #PRECONDICIONES: BUSCO DATO API SOBRE EQUIPOS LIGA 2023
+    #POSTCONDICIONES: DEVUELVE  2 DICTs CON LA INFO DE LOS EQUIPOS_2023
+
     url = "https://v3.football.api-sports.io/teams"
     parameters = {"league": "128", "season": 2023, "country": "Argentina"}
 
@@ -274,7 +294,9 @@ def equipos_liga_2023 () -> dict:
     return dict_equipos_n_id,dict_equipos_id_n
 
 def escudo_cancha(id_team: int)->None:
-
+    #PRECONDICIONES: BUSCO DATO API SOBRE EQUIPOS LIGA 2023 , permito ingreso equipo por el usuario
+    #POSTCONDICIONES: muestro escudo e info del estadio del equipo seleccionado    
+    
     url = "https://v3.football.api-sports.io/teams?"
     parameters = {"id": "434","country": "Argentina","league": "128","season": "2023"}
 
@@ -313,7 +335,8 @@ def escudo_cancha(id_team: int)->None:
         print("Err", respuesta.status_code )
 
 def grafico(equipo:str)->None:
-
+    #PRE : busco datos api sobre las estadicticas de los equipos
+    #POST: muestra grafico goles por minuto equipo selccionado por el usuario    
     dicts_equipos = equipos_liga_2023()
 
     id_equipo = dicts_equipos[equipo]
@@ -354,8 +377,40 @@ def grafico(equipo:str)->None:
         plt.ylabel("cant. goles")
         plt.show()
 
-def fechas_teams(id_team:int)->dict:
+
+def cargar_dinero_cuenta_usuario(id_usuario, dinero, fecha): 
+    #PRE :  verifivo usuario en el archivo data_usuario
+    #POST:  carga dinero dsiponible cuenta usuario ingesada
     
+    users = {} #dict donde se va a guardar la data del archivo
+    archivo_csv_users = 'data_users.csv'
+   
+    if os.path.isfile(archivo_csv_users):#verifica que exista el archivo de la data de los users
+
+       with open(archivo_csv_users, newline='',encoding="UTF-8") as archivo_csv:
+           csv_reader = csv.reader(archivo_csv, delimiter=',') 
+           next(csv_reader)#evita la primera linea, o sea el header
+           for row in csv_reader:
+               mail = row[0]
+               users[mail] = {'money': row[5]}
+
+    if id_usuario  in users[mail]:
+        dinero = input ("Dinero a cargar: ")
+        dinero = float(dinero)
+        dinero_en_cuenta = users[mail]['money'] 
+        users[mail]["money"] = dinero_en_cuenta + dinero
+    else:
+        print("Mail invalido")
+
+    print (f"Ahora posee {users[mail]['money']} disponible en su cuenta. ")
+    
+    registrar_transacciones_usuarios (id_usuario,fecha, "Deposita", dinero) #carga deposito de dinero en el archivo transacciones
+    modificar_dinero_cuenta_usuario (id_usuario, dinero, fecha) #guardo plata agregada en cuenta usuario
+
+
+def fechas_teams(id_team:int)->dict:
+    #PRE: datos api de los partidos a jugar
+    #POST: devuelve 3 dicts con fechas, equipos localaes y equipos visitantes
     url = "https://v3.football.api-sports.io/fixtures?"
 
     parameters = {"league": "128","season": 2023,"team":id_team}
@@ -391,21 +446,21 @@ def mostrar_teams()->None:
     for i in equipos_id:
             print(f"--{equipos_id[i]}--")
 
+#validacion fecha --> usuario ingresa fecha y se corrobora que este en el formato correcto
+def validacion_fecha () -> str:
+    fecha_valida = False
+    while not fecha_valida:
+        fecha_actual = input ("Ingrese fecha en formato YYYY/MM/DD: ")
+        if re.match (r"\d{4}/\d{2}/\d{2}", fecha_actual):
+            fecha_valida = True
+        else:
+            print("Por favor ingrese la fecha en el formato dado (YYYY/MM/DD)")
+            fecha_actual = input ("Ingrese fecha en formato YYYY/MM/DD: ")
+    return fecha_actual
 
-#no muy segura validar las fechas asi
-# def validacion_fecha ():
-#     fecha_valida = False
-#     while not fecha_valida:
-#         fecha_actual = input ("Ingrese fecha en formato YYYY/MM/DD: ")
-#         if re.match (r"\d{4}/\d{2}/\d{2}", fecha_actual):
-#             fecha_valida = True
-#         else:
-#             print("Por favor ingrese la fecha en el formato dado (YYYY/MM/DD)")
-#             fecha_actual = input ("Ingrese fecha en formato YYYY/MM/DD: ")
-#     return fecha_actual
-
-def archivo_transacciones_usuarios (id_usuario:str,fecha_actual:str, resultado: str, importe: int) -> dict:
+def registrar_transacciones_usuarios (id_usuario:str,fecha_actual:str, resultado: str, importe: int) -> dict:
     #mismo planteo e idea que el archivo usuarios
+
     transacciones_usuarios = {}
     nombre_archivo_transacciones= "transacciones.csv"
     if  os.path.isfile (nombre_archivo_transacciones):
@@ -426,8 +481,82 @@ def archivo_transacciones_usuarios (id_usuario:str,fecha_actual:str, resultado: 
         for mail, data in transacciones_usuarios.items():
             csv_writer.writerow({"mail": mail, "fecha": data["fecha"],"resultado": data["resultado"], "importe":data["importe"]})
 
+def validar_dinero_cuenta_usuario (id_usuario: str, importe: float):
+    #PRE: verifico dinero disponible usuario
+    #POST: devuelve un booleano (si dinero en cuenta menor importe ---> dinero_insuficiente = FALSE)
+    
+    archivo_csv_users = 'data_users.csv'
+    users = {}
+    if os.path.isfile(archivo_csv_users):
+       with open(archivo_csv_users, newline='',encoding="UTF-8") as archivo_csv:
+           csv_reader = csv.reader(archivo_csv, delimiter=',') 
+           next(csv_reader)
+           for row in csv_reader:
+               mail = row[0]
+               users[mail] = {'money': row[5]}
+    
+    dinero_insuficiente = False 
+
+    if id_usuario in users:
+        dinero_cuenta = users[mail]['money']
+        if dinero_cuenta < importe:
+            dinero_insuficiente = True
+    return dinero_insuficiente
+
+def modificar_dinero_cuenta_usuario (id_usuario:  str , dinero : float, fecha: str, restar: bool = False) -> None:
+     #PRE: modifico dinero en cuenta usuario 
+     #POST: obtengo archivo actualizado 
+    
+    filas_actualizadas  = []
+    archivo_csv_users = 'data_users.csv'
+    
+    if os.path.isfile(archivo_csv_users):
+       with open(archivo_csv_users, newline='',encoding="UTF-8") as archivo_csv:
+           csv_reader = csv.reader(archivo_csv, delimiter=',') 
+           next(csv_reader)
+           rows = list(csv_reader)
+           usuario_modificar = id_usuario
+           for row in rows:
+               if row[0] == usuario_modificar:
+                   row [4] = fecha 
+                   if restar:
+                       row[5] = float (row[5]) - float(dinero)
+                   else:
+                       row[5] = float (row[5]) + float(dinero)
+
+               filas_actualizadas.append(row)
+               
+           with open('data_users.csv', 'w', newline='', encoding='UTF-8') as archivo_csv: 
+               csv_writer = csv.writer(archivo_csv)
+               csv_writer. writerows (filas_actualizadas)
+
+
+
+def registrar_plata_apostada_usuario (id_usuario:  str , apuesta: float, fecha: str):
+     archivo_csv_users = 'data_users.csv'
+     filas_actualizadas  = []
+     if os.path.isfile(archivo_csv_users):
+       with open(archivo_csv_users, newline='',encoding="UTF-8") as archivo_csv:
+           csv_reader = csv.reader(archivo_csv, delimiter=',') 
+           next(csv_reader)
+           rows = list(csv_reader)
+           usuario_modificar = id_usuario
+           for row in rows:
+               if row[0] == usuario_modificar:
+                   row [3] = apuesta
+                   row[4] = fecha
+               
+               filas_actualizadas.append(row)
+
+           with open('data_users.csv', 'w', newline='', encoding='UTF-8') as archivo_csv: 
+               csv_writer = csv.writer(archivo_csv)
+               csv_writer. writerows (filas_actualizadas)
+
+
 
 def win_or_draw_f(id_partido:int)->int:
+    #PRE: busco datos api sobre las predcciones partidos de la liga
+    #POST: devuelve win_or_draw (booleano)
 
     url = "https://v3.football.api-sports.io"
 
@@ -450,7 +579,7 @@ def win_or_draw_f(id_partido:int)->int:
 
 
 def apuesta()->None:
-    
+
     print("Estos son los equipos que estan participando del torneo 2023")
      
     mostrar_teams()
@@ -464,18 +593,21 @@ def apuesta()->None:
 
     id_equipo = equipos_dict[equipo_op]
 
-    #funcion de buscar fechas
-    dict_fechas,dict_locales,dict_visitantes,ids_fechas = fechas_teams(id_equipo)
-    fecha_elegida:int = input("Ingrese el num de fecha por el que desea apostar: ")
-
-    while(fecha_elegida not in dict_fechas.keys()):
-        print("Fecha inexistente, intentelo de nuevo")
-        dict_fechas,dict_locales,dict_visitantes = fechas_teams(id_equipo)
-        fecha_elegida:int = input("Ingrese el num de fecha por el que desea apostar: ")
-
-    partido:list = dict_fechas[fecha_elegida]
-
-    id_partido:int = ids_fechas[partido]
+    #pide fecha usuario y evaulua qwue coincida con id del partido
+    dict_fechas, dict_locales, dict_visitantes, ids_fechas = fechas_teams(id_equipo)
+    fecha_elegida = input("Ingrese la fecha por la que desea apostar (YYYY-MM-DD): ")
+    id_partido = None
+    for partido, equipos in dict_fechas.items():
+        fecha_partido = equipos["fecha"]
+        if fecha_partido == fecha_elegida:
+            equipo_local = equipos["local"]
+            equipo_visitante = equipos["visitante"]
+            if equipo_local in ids_fechas and equipo_visitante in ids_fechas:
+                id_partido = ids_fechas[partido]
+            print(f"Fecha: {fecha_partido} - {equipo_local} (L) vs {equipo_visitante} (V)")
+        
+    else:
+        print("Fecha no encontrada")
 
     apuesta:int = input("Ingrese el numero correspondiente al tipo de apuesta: \n 1- Gana Local \n 2-Empatan\n 3-Gana Visitate")
     while(apuesta not in (1,2,3)):
@@ -488,7 +620,14 @@ def apuesta()->None:
 
     dado_resultado:int = random.randrange(1,4)#para definir si gana L/V o empatan
     cant_q_se_paga:int = random.randrange(1,5)#cuanto se le paga al ganador respecto a lo apostado
+    
     plata_apostada:float = input("Ingrese monto de dinero que desea apostar: ")
+    id_usuario = input("MAIL: ")
+    dinero_insuficiente = validar_dinero_cuenta_usuario (id_usuario, plata_apostada)
+    if dinero_insuficiente == False:
+        fecha = validacion_fecha ()
+        registrar_plata_apostada_usuario (id_usuario, plata_apostada, fecha)
+
 
     local = dict_locales[dict_fechas[fecha_elegida][0]]
     visitante = dict_visitantes[dict_fechas[fecha_elegida][1]]
@@ -513,23 +652,82 @@ def apuesta()->None:
 
         bet = "+" #como resulto la apuesta 
 
-        #aca habria que sumarle lo que gano a la plata que ya tenia 
-
+        # sumarle lo que gano a la plata que ya tenia 
+        pago = float(pago)
+        registrar_transacciones_usuarios (id_usuario,fecha, "Gana", " (+)", pago)
+        modificar_dinero_cuenta_usuario (id_usuario , pago, fecha)
     else: 
         print("Lo sentimos, usted a perdido la apuesta")
         bet = "-"#como resulto la apuesta 
-        #aca habria que descontarle lo que apostp de la cuenta 
+        # descontarle lo que apostp de la cuenta 
+
+    registrar_transacciones_usuarios (id_usuario,fecha, "pierde", " (-)", plata_apostada)
+    modificar_dinero_cuenta_usuario (id_usuario , float(plata_apostada), fecha, restar = True)
+     
+
+
+def usuario_mas_aposto(id_usuario: str, users: dict, apuesta: float) :
+    maximo_apostador = {}
+    users = {} 
+    archivo_csv_users = 'data_users.csv'
+    if os.path.isfile(archivo_csv_users):#verifica que exista el archivo de la data de los users
+       with open(archivo_csv_users, newline='',encoding="UTF-8") as archivo_csv:
+           csv_reader = csv.reader(archivo_csv, delimiter=',') 
+           next(csv_reader)#evita la primera linea, o sea el header
+           for row in csv_reader:
+               mail = row[0]
+               users[mail] = {'bets':row[3]}
+
+       if id_usuario in users:
+           users[id_usuario]["bets"] = apuesta
+           for apostador, datos in users.items():
+                if apostador not in maximo_apostador or datos ["bets"] > maximo_apostador[apostador]:
+                 maximo_apostador [apostador] = datos["bets"]
+                 
+    importes_ordenados = sorted(maximo_apostador.values (), reverse = True)           #----> ordenar descendente (reverse = True)
+    importe_maximo_valor = importes_ordenados [0]
+
+    #filtro de apostadores que realizaron apuestas maximas y agrego a a la lista apostadores
+    apostadores = []
+    for apostador, monto in maximo_apostador:
+        if monto == importe_maximo_valor:
+            apostadores.append(apostador)
+
+    print(f"Los apuestas fueron {importes_ordenados}, el usuario, {id_usuario}, fue quien mas aposto con un total de {importe_maximo_valor} ")
+    
+    
+    #ususario mas veces gano
+def usuario_mas_veces_gano (transacciones_usuarios: dict, id_usuario: str)-> None:
+    maximo_ganador = {}
+    transacciones_usuarios = {}
+
+    nombre_archivo_transacciones= "transacciones.csv"
+    if  os.path.isfile (nombre_archivo_transacciones):
+            with open ("transacciones.csv", newline='', encoding="UTF-8") as archivo_csv:
+                csv_reader = csv.reader (archivo_csv, delimiter = ",")
+                next (csv_reader) 
+                for row in csv_reader:
+                    mail = row[0]
+                    transacciones_usuarios[mail] = {"fecha": row [1], "resultado": row [2], "importe": row[3]}
+    
+    for transaccion in transacciones_usuarios.values():
+        if transaccion["resultado"] == "gana":
+            id_usuario = transaccion[id_usuario]
+            if id_usuario not in maximo_ganador:
+                maximo_ganador[id_usuario] = 1
+            else:
+                maximo_ganador[id_usuario] += 1
+
+    ganador = maximo_ganador.get()
+    if ganador:
+        victorias = maximo_ganador[ganador]
+        print(f"El usuario que mas veces gano es {ganador} con un total de victorias {victorias} ")
         
-    #falta verificar que el usuario tenga la plata en cuenta para apostar la cant que este apostando 
-    #falta la parte de transacciones aca, tamb la de user_data(o sea agregar a la parte de bets lo que resulto de la variable bet y agregar la plata ganada o perdida a la cuenta)
 
 def main()->None:
-   
+    fin = False
 
-    mostrar_tabla_posiciones(2022)
-    #apuesta()
-
-    """print("Bienvenido a la mejor plataforma de apuestas futboleras")
+    print("Bienvenido a la mejor plataforma de apuestas futboleras")
     ids_ingresados = []
     
     op = input("Desea acceder a la plataforma? y/n:")
@@ -539,38 +737,131 @@ def main()->None:
         op = input("Desea acceder a la plataforma? y/n:")
     
     while(op.lower()!="n"):
-
+       
         print("Jugatela: plataforma de apuestas.\nEsta plataforma requiere tener un usuario, elija segun el caso:")
         usuario = input("a-Iniciar sesion:\n b-Crearse una cuenta:\n")
         while(validar_usuario(usuario)==False):
             print("La opcion ingresada no se enuentra dentro de las posibles.")
             print("Ingrese de nuevo.")
             usuario = input("a-Iniciar sesion:\n b-Crearse una cuenta:\n")
-
         if usuario.lower()=="b":
-            
             id_usario = user_registration(ids_ingresados)
             ids_ingresados.append(id_usario)
 
         elif usuario.lower()=="a":
-            pass
+             users = inicio_sesion() #creo que funciona
+             for intentos in range(3):
+                mail = input("Correo electronico: ")
+                password =("Contraseña: ")
+                if mail in users and sha256_crypt.verify(password, users[mail]["password"]):
+                    print("Inicio de sesión exitoso!")
+                else:
+                    print("Datos inválidos. Intento restante:", 2 - intentos)
+             else:
+                print("Has excedido el número máximo de intentos. Por favor, vuelve a intentarlo más tarde.")
+               
+    
+        equipos_2023 = equipos_liga_2023_2()
+        jugadores_2023 = jugadores_equipos ()
+        mostrar_tabla_posiciones(2022)
+        apuesta()
 
-        jugar = input ("Desea ver nuestras actuvidades disponibles? (y/n): ").lower()
-
-        while jugar != "n":
-            equipos_2023 = equipos_liga_2023()
-            jugadores_2023 = jugadores_equipos ()
+        while not fin :
             imprimir_opciones()
             opcion_elegida = input ("Seleccione una opcion del menu: ")
             opcion_elegida = int(opcion_elegida)
-            if opcion_elegida != 9  or  opcion_elegida != 0:
+            if opcion_elegida != 9 :
                 opcion_seleccionada(opcion_elegida, equipos_2023, jugadores_2023)   
             else:
+                fin = True
                 print("¡Gracias por su vista! Dejanos una opinion: ")
                 opinion = input ()
-        if jugar == "n":
-            print("¡Gracias por su vista! Dejanos una opinion: ")
-            opinion = input ()
-"""
+
+    
+ 
 
 main()
+
+
+
+#idea original de apuestas que no funcionaba
+    
+    # print("Estos son los equipos que estan participando del torneo 2023")
+     
+    # mostrar_teams()
+    
+    # equipos_dict,equipos_id = equipos_liga_2023()
+
+    # equipo_op = input("Elija por cual equipo desea apostar: ")
+    # while(equipo_op not in equipos_id.values()):
+    #     print("Opcion incorrecta, intente de nuevo")
+    #     equipo_op = input("Escriba por el equipo que desea apostar: ")
+
+    # id_equipo = equipos_dict[equipo_op]
+
+    # #funcion de buscar fechas
+    # dict_fechas,dict_locales,dict_visitantes,ids_fechas = fechas_teams(id_equipo)
+    # fecha_elegida:int = input("Ingrese el num de fecha por el que desea apostar: ")
+
+    # while(fecha_elegida not in dict_fechas.keys()):
+    #     print("Fecha inexistente, intentelo de nuevo")
+    #     dict_fechas,dict_locales,dict_visitantes = fechas_teams(id_equipo)
+    #     fecha_elegida:int = input("Ingrese el num de fecha por el que desea apostar: ")
+
+    # partido:list = dict_fechas[fecha_elegida]
+
+    # id_partido:int = ids_fechas[partido]
+    # apuesta:int = input("Ingrese el numero correspondiente al tipo de apuesta: \n 1- Gana Local \n 2-Empatan\n 3-Gana Visitate")
+    # while(apuesta not in (1,2,3)):
+    #     print("Opcion invalida, intente de nuevo.")
+    #     apuesta = input("Ingrese el numero correspondiente al tipo de apuesta: \n 1- Gana Local \n 2-Empatan\n 3-Gana Visitate")
+
+    # casos = {1:"gana local",2:"empatan",3:"gana visitante"}
+
+    # print(f"Usted a decidido apostar que {partido[0]}vs{partido[1]}, {casos[apuesta]} en la fecha {fecha_elegida}")
+
+    # dado_resultado:int = random.randrange(1,4)#para definir si gana L/V o empatan
+    # cant_q_se_paga:int = random.randrange(1,5)#cuanto se le paga al ganador respecto a lo apostado
+    
+    # plata_apostada:float = input("Ingrese monto de dinero que desea apostar: ")
+    # id_usuario = input("MAIL: ")
+    # dinero_insuficiente = validar_dinero_cuenta_usuario (id_usuario, plata_apostada)
+    # if dinero_insuficiente == False:
+    #     fecha = validacion_fecha ()
+    #     registrar_plata_apostada_usuario (id_usuario, plata_apostada, fecha)
+
+
+    # local = dict_locales[dict_fechas[fecha_elegida][0]]
+    # visitante = dict_visitantes[dict_fechas[fecha_elegida][1]]
+
+    # id_win_or_draw = win_or_draw_f(id_partido) #win_or_draw=true para el id del equipo que devuelve
+
+    # if dado_resultado==apuesta:
+
+    #     print("Ha ganado la apuesta!")
+    #     if dado_resultado==1 and id_win_or_draw == local:#aposto al local y tiene true el w_o_d
+    #         pago = plata_apostada*(cant_q_se_paga/10)
+    #     elif dado_resultado==1 and id_win_or_draw!=local:#aposto al local pero estaba False para local
+    #         pago = plata_apostada*(cant_q_se_paga)
+    #     elif dado_resultado==2:#aposto a que empataban, gano tarifa de empate
+    #         pago = plata_apostada*(0.5)
+    #     elif dado_resultado==3 and id_win_or_draw == visitante:#aposto a visitante y el true estaba para visitante
+    #         pago = plata_apostada*(cant_q_se_paga/10)
+    #     elif dado_resultado==3 and id_win_or_draw!=visitante:#aposto al visitante pero estaba False para visitante
+    #         pago = plata_apostada*(cant_q_se_paga)
+
+    #     print(f"Dinero ganado: {pago}")
+
+    #     bet = "+" #como resulto la apuesta 
+
+    #     # sumarle lo que gano a la plata que ya tenia 
+    #     pago = float(pago)
+    #     registrar_transacciones_usuarios (id_usuario,fecha, "Gana", " (+)", pago)
+    #     modificar_dinero_cuenta_usuario (id_usuario , pago, fecha)
+    # else: 
+    #     print("Lo sentimos, usted a perdido la apuesta")
+    #     bet = "-"#como resulto la apuesta 
+    #     # descontarle lo que apostp de la cuenta 
+
+    # registrar_transacciones_usuarios (id_usuario,fecha, "pierde", " (-)", plata_apostada)
+    # modificar_dinero_cuenta_usuario (id_usuario , float(-plata_apostada), fecha)
