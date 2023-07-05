@@ -56,7 +56,7 @@ def archivo_csv_r_w_data_users(new_mail:str,new_name:str,new_password:str,new_mo
 
     if os.path.isfile(archivo_csv_users):#verifica que exista el archivo de la data de los users
 
-       with open(archivo_csv_users, newline='',encoding="UTF-8") as archivo_csv:
+       with open(archivo_csv_users, 'r', newline='',encoding="UTF-8") as archivo_csv:
            csv_reader = csv.reader(archivo_csv, delimiter=',') 
            next(csv_reader)#evita la primera linea, o sea el header
            for row in csv_reader:
@@ -128,12 +128,12 @@ def opcion_seleccionada (opcion_elegida:int, mail:str):   #agregar mas parametro
 
     elif opcion_elegida == 2:#finished
         print("---Tabla de posiciones de la Liga profesional---")
-        temps = [2015,2016,2017,2018,2019,2020,2021,2022]
+        temps = {1:2015,2:2016,3:2017,4:2018,5:2019,6:2020,7:2021,8:2022}
         print("Temporadas (años):")
-        for i in range (len(temps)):
-            print(f"{i+1}-{temps[i]}")
-        temporada = input("Ingrese una de las temporadas en pantalla(oprima el numero que tiene al comienzo): ")
-        while(temporada not in (1,2,3,4,5,6,7,8)):
+        for i in temps.keys():
+            print(f"{i}-{temps[i]}")
+        temporada = int(input("Ingrese una de las temporadas en pantalla(oprima el numero que tiene al comienzo): "))
+        while(temporada not in temps.keys()):
             print("Opcion incorrecta, intente de nuevo")
             print("Temporadas (años):")
             for i in range (len(temps)):
@@ -144,33 +144,44 @@ def opcion_seleccionada (opcion_elegida:int, mail:str):   #agregar mas parametro
 
     elif opcion_elegida == 3:#finished
         print ("--- Escudos y Estadios ---")
-        mostrar_teams()
-        equipo_seleccionado=input("Seleccione equipo dentro del listado:")
-        iddelequipo = equipos_dict[equipo_seleccionado]
+        num_equipos,equipos_dict = mostrar_teams()
+        equipo_seleccionado=int(input("Seleccione equipo dentro del listado:"))
+        while equipo_seleccionado not in num_equipos.keys():
+            print("Opcion invalida, intente nuevamente.")
+            print ("--- Escudos y Estadios ---")
+            num_equipos,equipos_dict = mostrar_teams()
+            equipo_seleccionado=int(input("Seleccione equipo dentro del listado:"))
+        iddelequipo = equipos_dict[num_equipos[equipo_seleccionado]]
         escudo_cancha(iddelequipo)
 
     elif opcion_elegida == 4:#finished
         print ("--- Grafico goles y minutos ---")
-        mostrar_teams()
-        equipo_seleccionado:str =input("Seleccione equipo dentro del listado:")
-        while(equipo_seleccionado not in equipos_id.values()):
+        num_equipos,equipos_dict = mostrar_teams()
+        equipo_seleccionado =int(input("Seleccione equipo dentro del listado(escribir numero de al lado):"))
+        while(equipo_seleccionado not in num_equipos.keys()):
             print("Opcion invalida, intente de nuevo.")
             equipo_seleccionado:str =input("Seleccione equipo dentro del listado:")
-        grafico(equipo_seleccionado) 
+        equipo_id = equipos_dict[num_equipos[equipo_seleccionado]]
+
+        grafico(equipo_id) 
 
     elif opcion_elegida == 5:
         print ("--- Cargar dinero a cuenta ---")
-        id_usuario = input ("MAIL: ")
-        cargar_dinero_cuenta_usuario (id_usuario, "","")
+        dinero = int(input("Ingrese la cantidad de dinero que desea agregar a su cuenta:"))
+        fecha = input ("Ingrese fecha en formato YYYY/MM/DD: ")
+        while validacion_fecha(fecha)==False:
+            print("Formato incorrecto, intente de nuevo")
+            fecha = input ("Ingrese fecha en formato YYYY/MM/DD: ")
+        cargar_dinero_cuenta_usuario(mail, dinero,fecha)
     
     elif opcion_elegida == 6:
         print ("--- Usuario que más dinero apostó ---")
-        usuario_mas_aposto (id_usuario, "", "") 
+        usuario_mas_aposto (mail, "", "") 
         
 
     elif opcion_elegida == 7:
         print ("--- Usuario que más veces gano ---")
-        usuario_mas_veces_gano(id_usuario, "", "")
+        usuario_mas_veces_gano(mail, "", "")
 
     elif opcion_elegida == 8:
         print("--- APUESTAS ---")
@@ -356,16 +367,13 @@ def escudo_cancha(id_team: int)->None:
     else:
         print("Err", respuesta.status_code )
 
-def grafico(equipo:str)->None:
+def grafico(equipo_id:int)->None:
     #PRE : busco datos api sobre las estadicticas de los equipos
     #POST: muestra grafico goles por minuto equipo selccionado por el usuario    
-    dicts_equipos = equipos_liga_2023()
-
-    id_equipo = dicts_equipos[equipo]
 
     url = "https://v3.football.api-sports.io/teams/statistics?"
 
-    parameters = {"league": "128","season": 2023,"team":id_equipo}
+    parameters = {"league": "128","season": 2023,"team":equipo_id}
 
     headers = {"x-rapidapi-host": "v3.football.api-sports.io", "x-rapidapi-key": "a991e40daffd726206f67b1a40947c67" }
 
@@ -385,7 +393,7 @@ def grafico(equipo:str)->None:
         
         for minutos in dict_info['goals']['for']['minute']:
             mins.append(minutos)
-            goles.append(dict_info['goals']['for']['minute '][minutos]['total'])
+            goles.append(dict_info['goals']['for']['minute'][minutos]['total'])
             golesxminuto[minutos] = dict_info['goals']['for']['minute'][minutos]['total']
         
 
@@ -409,22 +417,18 @@ def cargar_dinero_cuenta_usuario(id_usuario, dinero, fecha):
    
     if os.path.isfile(archivo_csv_users):#verifica que exista el archivo de la data de los users
 
-       with open(archivo_csv_users, newline='',encoding="UTF-8") as archivo_csv:
+       with open(archivo_csv_users, 'r', newline='',encoding="UTF-8") as archivo_csv:
            csv_reader = csv.reader(archivo_csv, delimiter=',') 
            next(csv_reader)#evita la primera linea, o sea el header
            for row in csv_reader:
                mail = row[0]
                users[mail] = {'money': row[5]}
 
-    if id_usuario  in users[mail]:
-        dinero = input ("Dinero a cargar: ")
-        dinero = float(dinero)
-        dinero_en_cuenta = users[mail]['money'] 
-        users[mail]["money"] = dinero_en_cuenta + dinero
-    else:
-        print("Mail invalido")
+    if id_usuario  in users.keys():
+        dinero_en_cuenta = users[id_usuario]['money'] 
+        dinero_actualizado = dinero_en_cuenta + dinero
 
-    print (f"Ahora posee {users[mail]['money']} disponible en su cuenta. ")
+    print (f"Ahora posee {dinero_actualizado} disponible en su cuenta. ")
     
     registrar_transacciones_usuarios (id_usuario,fecha, "Deposita", dinero) #carga deposito de dinero en el archivo transacciones
     modificar_dinero_cuenta_usuario (id_usuario, dinero, fecha) #guardo plata agregada en cuenta usuario
@@ -465,32 +469,38 @@ def fechas_teams(id_team: int) -> dict:
     return dict_fechas, locales, visitantes,id_fecha
 
 
-def mostrar_teams()->None:
+def mostrar_teams()->dict:
+    
     equipos_dict,equipos_id = equipos_liga_2023()
+    opcion_equipos = {}
+    x = 1
 
     for i in equipos_id:
-            print(f"--{equipos_id[i]}--")
+            print(f"{x}--{equipos_id[i]}--")
+            opcion_equipos[x] = equipos_id[i]
+            x+=1
+
+    return opcion_equipos, equipos_dict
 
 #validacion fecha --> usuario ingresa fecha y se corrobora que este en el formato correcto
-def validacion_fecha () -> str:
+def validacion_fecha (fecha:str) -> bool:
     fecha_valida = False
     while not fecha_valida:
-        fecha_actual = input ("Ingrese fecha en formato YYYY/MM/DD: ")
-        if re.match (r"\d{4}/\d{2}/\d{2}", fecha_actual):
+        if re.match (r"\d{4}/\d{2}/\d{2}", fecha):
             fecha_valida = True
         else:
-            print("Por favor ingrese la fecha en el formato dado (YYYY/MM/DD)")
-            fecha_actual = input ("Ingrese fecha en formato YYYY/MM/DD: ")
-    return fecha_actual
+            fecha_valida = False
+    return fecha_valida
 
 def registrar_transacciones_usuarios (id_usuario:str,fecha_actual:str, resultado: str, importe: int) -> dict:
     #mismo planteo e idea que el archivo usuarios
 
     transacciones_usuarios = {}
-    nombre_archivo_transacciones= "transacciones.csv"
-    if  os.path.isfile (nombre_archivo_transacciones):
-        with open ("transacciones.csv", newline='', encoding="UTF-8") as archivo_csv:
-            csv_reader = csv.reader (archivo_csv, delimiter = ",")
+    archivo_transacciones = 'transacciones.csv'
+    
+    if  os.path.isfile(archivo_transacciones):
+        with open(archivo_transacciones, 'r', newline='', encoding="UTF-8") as archivo_csv:
+            csv_reader = csv.reader(archivo_csv, delimiter = ',')
             next (csv_reader) 
             for row in csv_reader:
                 mail = row[0]
@@ -543,12 +553,17 @@ def modificar_dinero_cuenta_usuario (id_usuario:  str , dinero : float, fecha: s
            usuario_modificar = id_usuario
            for row in rows:
                if row[0] == usuario_modificar:
-                   row [4] = fecha 
-                   if restar:
-                       row[5] = float (row[5]) - float(dinero)
-                   else:
-                       row[5] = float (row[5]) + float(dinero)
-
+                    row [4] = fecha 
+                    if dinero!='':
+                        if restar:
+                            row[5] = float (row[5]) - float(dinero)
+                        else:
+                            row[5] = float (row[5]) + float(dinero)
+                    elif dinero== '':
+                        if restar:
+                            row[5] = float(row[5])
+                        else:
+                            row[5] = float(row[5])
                filas_actualizadas.append(row)
                
            with open('data_users.csv', 'w', newline='', encoding='UTF-8') as archivo_csv: 
@@ -781,18 +796,15 @@ def main()->None:
             while(validar_mail_2(mail,password,users)==False):
                 print("Mail incorrecto. Si usted ya posee una cuenta, ingrese correctamente el mail")
                 mail = input("Correo electronico: ")
-                password =("Contraseña: ")
+                password =input("Contraseña: ")
+                users = inicio_sesion()
             
-
-   
-    
         """equipos_2023 = equipos_liga_2023_2()
         jugadores_2023 = jugadores_equipos ()"""
 
         while not fin :
             imprimir_opciones()
-            opcion_elegida = input ("Seleccione una opcion del menu: ")
-            opcion_elegida = int(opcion_elegida)
+            opcion_elegida = int(input ("Seleccione una opcion del menu: "))
             if opcion_elegida != 9 :
                 opcion_seleccionada(opcion_elegida,mail)#, equipos_2023, jugadores_2023
             else:
