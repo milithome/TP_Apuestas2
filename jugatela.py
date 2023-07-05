@@ -1,6 +1,6 @@
 
 #keys:  mili: a991e40daffd726206f67b1a40947c67
-#       vicky : 407726f0daca539a383c3c8ca8e4ca93
+#       vicky : a991e40daffd726206f67b1a40947c67
 
 import os
 import requests
@@ -289,7 +289,7 @@ def mostrar_tabla_posiciones(temporada:int)->None:
     
     params = {"league": "128","season": temporada}
     
-    headers = {'x-rapidapi-host': "v3.football.api-sports.io",'x-rapidapi-key': "407726f0daca539a383c3c8ca8e4ca93"}
+    headers = {'x-rapidapi-host': "v3.football.api-sports.io",'x-rapidapi-key': "a991e40daffd726206f67b1a40947c67"}
     
     respuesta = requests.get(url, params=params, headers=headers)
     
@@ -311,7 +311,7 @@ def equipos_liga_2023 () -> dict:
     url = "https://v3.football.api-sports.io/teams"
     parameters = {"league": "128", "season": 2023, "country": "Argentina"}
 
-    headers = {"x-rapidapi-host": "v3.football.api-sports.io","x-rapidapi-key": "407726f0daca539a383c3c8ca8e4ca93" }
+    headers = {"x-rapidapi-host": "v3.football.api-sports.io","x-rapidapi-key": "a991e40daffd726206f67b1a40947c67" }
 
     respuesta = requests.get(url, params = parameters, headers = headers)
     equipos_2023 = {}
@@ -337,7 +337,7 @@ def escudo_cancha(id_team: int)->None:
     url = "https://v3.football.api-sports.io/teams?"
     parameters = {"id": id_team,"country": "Argentina","league": "128","season": "2023"}
 
-    headers = {"x-rapidapi-host": "v3.football.api-sports.io","x-rapidapi-key": "407726f0daca539a383c3c8ca8e4ca93" }
+    headers = {"x-rapidapi-host": "v3.football.api-sports.io","x-rapidapi-key": "a991e40daffd726206f67b1a40947c67" }
 
     respuesta = requests.get(url, params = parameters, headers = headers)
 
@@ -468,8 +468,8 @@ def fechas_teams(id_team: int) -> dict:
             locales[local] = fixture['teams']['home']['id']
             visitantes[visitante] = fixture['teams']['away']['id']
             # dict_fechas[fixture['fixture']['id']] = [locales[local], visitantes[visitante]]
-            id_fecha[[locales[local], visitantes[visitante]]] = fixture['fixture']['id']
-            x_op_l_v[x_op]= [locales[local], visitantes[visitante]]
+            id_fecha[(locales[local], visitantes[visitante])] = fixture['fixture']['id']
+            x_op_l_v[x_op]= (locales[local], visitantes[visitante])
 
             x_op+=1
     else:
@@ -618,11 +618,9 @@ def win_or_draw_f(id_partido:int)->int:
     predictions = {}
     if respuesta.status_code == 200:
         data = respuesta.json()
-        predictions = data['response']
+        predictions = data['response'][0]
 
-        id_equipo_true = predictions['winner']['id']
-
-        win_or_draw = id_equipo_true
+        win_or_draw = predictions['predictions']['winner']['id'] #id del equipo en el que el winordraw esta true
 
     return win_or_draw
 
@@ -654,17 +652,21 @@ def apuesta(mail:str)->None:
     
     id_partido = ids_fechas[dicc_lv_idfecha[fecha_elegida]]
     
-    local = equipos_id[dict_fechas[id_partido]['local']]
-    visitante = equipos_id[dict_fechas[id_partido]['visitante']]
+    local = equipos_dict[dict_fechas[id_partido]['local']]
+    visitante = equipos_dict[dict_fechas[id_partido]['visitante']]
 
     apuesta = int(input("Ingrese el numero correspondiente al tipo de apuesta: \n 1- Gana Local \n 2-Empatan\n 3-Gana Visitate"))
     while(apuesta not in (1,2,3)):
         print("Opcion invalida, intente de nuevo.")
         apuesta = input("Ingrese el numero correspondiente al tipo de apuesta: \n 1- Gana Local \n 2-Empatan\n 3-Gana Visitate")
-
+    fecha = input("Ingrese la fecha de hoy( asi YYYY/MM/DD): ")
+    while(validacion_fecha(fecha)==False):
+        print("Fecha incorrecta, intente de nuevo")
+        fecha = input("Ingrese la fecha de hoy( asi YYYY/MM/DD): ")
+    
     casos = {1:"gana local",2:"empatan",3:"gana visitante"}
 
-    print(f"Usted a decidido apostar que {local}vs{visitante}, {casos[apuesta]} en la fecha {fecha_elegida}")
+    print(f"Usted a decidido apostar que {equipos_id[local]}vs{equipos_id[visitante]}, {casos[apuesta]} en la fecha {fecha_elegida}")
 
     dado_resultado:int = random.randrange(1,4)#para definir si gana L/V o empatan
     cant_q_se_paga:int = random.randrange(1,5)#cuanto se le paga al ganador respecto a lo apostado
@@ -673,7 +675,6 @@ def apuesta(mail:str)->None:
 
     dinero_insuficiente = validar_dinero_cuenta_usuario (mail, plata_apostada)
     if dinero_insuficiente == False:
-        fecha = validacion_fecha ()
         registrar_plata_apostada_usuario(mail, plata_apostada, fecha)
 
 
@@ -737,6 +738,7 @@ def usuario_mas_aposto(mail: str, users: dict, apuesta: float) :
     
     
     #ususario mas veces gano
+
 def usuario_mas_veces_gano (transacciones_usuarios: dict, mail: str)-> None:
     maximo_ganador = {}
     transacciones_usuarios = {}
@@ -790,6 +792,8 @@ def main()->None:
             id_usario = user_registration(ids_ingresados)
             ids_ingresados.append(id_usario)
             op = input("Desea acceder a la plataforma? y/n:")
+            print("Jugatela: plataforma de apuestas.\nEsta plataforma requiere tener un usuario, elija segun el caso:")
+            usuario = input("a-Iniciar sesion:\n b-Crearse una cuenta:\n")
 
         elif usuario.lower()=="a":
             mail = input("Correo electronico: ")
@@ -800,10 +804,7 @@ def main()->None:
                 mail = input("Correo electronico: ")
                 password =input("Contraseña: ")
                 users = inicio_sesion()
-            
-        """equipos_2023 = equipos_liga_2023_2()
-        jugadores_2023 = jugadores_equipos ()"""
-
+  
         while not fin :
             imprimir_opciones()
             opcion_elegida = int(input ("Seleccione una opcion del menu: "))
@@ -812,7 +813,7 @@ def main()->None:
             else:
                 fin = True
                 print("¡Gracias por su vista! Dejanos una opinion: ")
-                opinion = input ()
+                opinion = input ("Opinion:")
 
     
  
