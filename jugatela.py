@@ -7,6 +7,13 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np 
 from PIL import Image
+import re 
+
+def validar_mail_2(mail:str,password:str,users:dict)->bool:
+    
+    if mail in users.keys() and sha256_crypt.verify(password, users[mail]["password"]):
+        return True
+    else: return False
 
 #permitir ingreso usuario y demas
 
@@ -66,7 +73,7 @@ def archivo_csv_r_w_data_users(new_mail:str,new_name:str,new_password:str,new_mo
             csv_writer.writerow([mail,data['name'],data['password'],data['bets'],data['date'],data['money']])
 
 
-def inicio_sesion () -> str: 
+def inicio_sesion () -> dict: 
     #PRECONDICIONES: USUARIO YA INGRESADO SISTEMA INICIA SESION
     #POSTCONDICIONES: DEVUELVE  MAIL  Y CONTRASEÑA  GUARDADO EN EL ARCHIVO DATA_USERS (USERS)
 
@@ -99,7 +106,7 @@ def imprimir_opciones()->None:
     print ("8. Apuestas")
     print ("9. SALIR")
 
-def opcion_seleccionada (opcion_elegida:int, equipos_2023:dict, jugadores_2023:dict):   #agregar mas parametros si es necesario 
+def opcion_seleccionada (opcion_elegida:int, mail:str):   #agregar mas parametros si es necesario , equipos_2023:dict, jugadores_2023:dict
     #PRECONDICIONES: USARIO ELIGE OPCION 
     #POSTCONDICIONES: EJECUTO OPCION ELEGIDA    
     equipos_dict,equipos_id = equipos_liga_2023()
@@ -107,13 +114,17 @@ def opcion_seleccionada (opcion_elegida:int, equipos_2023:dict, jugadores_2023:d
     if opcion_elegida == 1:#finished
         print("--- Equipos de la Liga Profesional Temporada 2023---")
         equipos_2023 = equipos_liga_2023 ()
-        listar_equipos_2023 (equipos_2023)
-        id_equipo_usuario = None # valor predeterminado
-        while id_equipo_usuario is None:
-            equipo_usuario = input("Seleccione equipo: ").capitalize()
-            id_equipo_usuario = buscar_id_equipo(equipos_2023, equipo_usuario)
-            jugadores_2023 = jugadores_equipos()
-            plantel_2023(id_equipo_usuario, jugadores_2023, equipo_usuario)
+        opcion_ids_equipos,opciones_equipos = listar_equipos_2023(equipos_2023)
+        equipo_usuario = int(input("Seleccione equipo(escriba el numero que tiene al lado): "))
+        while equipo_usuario not in opcion_ids_equipos.keys():
+            print("Opcion incorrecta, por favor intente de nuevo.")
+            opcion_ids_equipos = listar_equipos_2023 (equipos_2023)
+            equipo_usuario = int(input("Seleccione equipo(escriba el numero que tiene al lado): "))
+        
+        id_equipo_usuario = opcion_ids_equipos[equipo_usuario]
+        equipo = opciones_equipos[equipo_usuario]
+        jugadores_2023 = jugadores_equipos()
+        plantel_2023(id_equipo_usuario, equipo, jugadores_2023)
 
     elif opcion_elegida == 2:#finished
         print("---Tabla de posiciones de la Liga profesional---")
@@ -163,7 +174,7 @@ def opcion_seleccionada (opcion_elegida:int, equipos_2023:dict, jugadores_2023:d
 
     elif opcion_elegida == 8:
         print("--- APUESTAS ---")
-        apuesta()
+        apuesta(mail)
        
 
     else:
@@ -171,11 +182,11 @@ def opcion_seleccionada (opcion_elegida:int, equipos_2023:dict, jugadores_2023:d
         opcion_seleccionada(opcion_elegida,equipos_2023, jugadores_2023 )
 
 
-def plantel_2023(id_equipo:int, jugadores_2023:dict, equipo_usuario: str):
+def plantel_2023(id_equipo:int,equipo:str, jugadores_2023:dict):
     #PRECONDICIONES: EVALUA EQUIPO INGRESADO COINCIDE CON EL GUARDADO EN EL DICT EQUIPOS 2023
     #POSTCONDICIONES: IMPRIME PLANTEL
 
-    print(f"\nPlantel de {equipo_usuario}  con ID {id_equipo}:")
+    print(f"\nPlantel de {equipo}  con ID {id_equipo}:")
     for jugador in jugadores_2023:
         if jugador['statistics'][0]['team']['id'] == id_equipo:
             print(jugador['player']['name'])       
@@ -190,7 +201,7 @@ def equipos_liga_2023_2 () -> dict:
     
     parameters = {"league": "128", "season": 2023, "country": "Argentina"}
 
-    headers = {"x-rapidapi-host": "v3.football.api-sports.io","x-rapidapi-key": "6560a6c96c1a8e1c14463129104c7c84" }
+    headers = {"x-rapidapi-host": "v3.football.api-sports.io","x-rapidapi-key": "a991e40daffd726206f67b1a40947c67" }
 
     respuesta = requests.get(url, params = parameters, headers = headers)
     equipos_2023 = {}
@@ -211,7 +222,7 @@ def jugadores_equipos ()-> dict:  #obtengo toda info de los jugadores, la guardo
     
     url = "https://v3.football.api-sports.io/players"
     parameters ={"league": "128", "season": 2023}
-    headers = {"x-rapidapi-host": "v3.football.api-sports.io","x-rapidapi-key": "407726f0daca539a383c3c8ca8e4ca93"}
+    headers = {"x-rapidapi-host": "v3.football.api-sports.io","x-rapidapi-key": "a991e40daffd726206f67b1a40947c67"}
     respuesta = requests.get (url, params = parameters, headers = headers)
     jugadores_2023 = {}
     if respuesta.status_code == 200:
@@ -222,15 +233,26 @@ def jugadores_equipos ()-> dict:  #obtengo toda info de los jugadores, la guardo
 
     return jugadores_2023
 
-def listar_equipos_2023 (equipos_2023:dict) -> None: 
+def listar_equipos_2023 (equipos_2023:dict) -> dict: 
     # PRE : enumerar los equipos
     # POST:  muestro por consola 
-         
+    
+    opcion_equipos={}
+    opcion_ids = {}
+
     i = 1
-    for  equipo in  equipos_2023:
-            nombre_equipo = equipo["team"]["name"]
-            print(f"{i}. {nombre_equipo}")
-            i += 1    
+    
+    for id in equipos_2023[1].keys():
+
+        opcion_equipos[i] = equipos_2023[1][id]
+        opcion_ids[i] = id
+
+        print(f"{i}-{equipos_2023[1][id]}")
+
+        i+=1
+
+    return opcion_ids, opcion_equipos
+    
 
 def buscar_id_equipo(equipos_2023:dict, equipo_usuario:str) -> None:   #obtnego id del equipo que pide usuario y lo verifico
 #PRE: obtnego id del equipo que pide usuario y lo verifico
@@ -252,7 +274,7 @@ def mostrar_tabla_posiciones(temporada:int)->None:
     
     params = {"league": "128","season": temporada}
     
-    headers = {'x-rapidapi-host': "v3.football.api-sports.io",'x-rapidapi-key': "6560a6c96c1a8e1c14463129104c7c84"}
+    headers = {'x-rapidapi-host': "v3.football.api-sports.io",'x-rapidapi-key': "a991e40daffd726206f67b1a40947c67"}
     
     respuesta = requests.get(url, params=params, headers=headers)
     
@@ -274,7 +296,7 @@ def equipos_liga_2023 () -> dict:
     url = "https://v3.football.api-sports.io/teams"
     parameters = {"league": "128", "season": 2023, "country": "Argentina"}
 
-    headers = {"x-rapidapi-host": "v3.football.api-sports.io","x-rapidapi-key": "6560a6c96c1a8e1c14463129104c7c84" }
+    headers = {"x-rapidapi-host": "v3.football.api-sports.io","x-rapidapi-key": "a991e40daffd726206f67b1a40947c67" }
 
     respuesta = requests.get(url, params = parameters, headers = headers)
     equipos_2023 = {}
@@ -298,9 +320,9 @@ def escudo_cancha(id_team: int)->None:
     #POSTCONDICIONES: muestro escudo e info del estadio del equipo seleccionado    
     
     url = "https://v3.football.api-sports.io/teams?"
-    parameters = {"id": "434","country": "Argentina","league": "128","season": "2023"}
+    parameters = {"id": id_team,"country": "Argentina","league": "128","season": "2023"}
 
-    headers = {"x-rapidapi-host": "v3.football.api-sports.io","x-rapidapi-key": "6560a6c96c1a8e1c14463129104c7c84" }
+    headers = {"x-rapidapi-host": "v3.football.api-sports.io","x-rapidapi-key": "a991e40daffd726206f67b1a40947c67" }
 
     respuesta = requests.get(url, params = parameters, headers = headers)
 
@@ -345,7 +367,7 @@ def grafico(equipo:str)->None:
 
     parameters = {"league": "128","season": 2023,"team":id_equipo}
 
-    headers = {"x-rapidapi-host": "v3.football.api-sports.io", "x-rapidapi-key": "6560a6c96c1a8e1c14463129104c7c84" }
+    headers = {"x-rapidapi-host": "v3.football.api-sports.io", "x-rapidapi-key": "a991e40daffd726206f67b1a40947c67" }
 
     respuesta = requests.get(url, params = parameters, headers = headers)
 
@@ -411,7 +433,7 @@ def cargar_dinero_cuenta_usuario(id_usuario, dinero, fecha):
 def fechas_teams(id_team: int) -> dict:
     url = "https://v3.football.api-sports.io/fixtures?"
     parameters = {"league": "128", "season": 2023, "team": id_team}
-    headers = {"x-rapidapi-host": "v3.football.api-sports.io", "x-rapidapi-key": "407726f0daca539a383c3c8ca8e4ca93"}
+    headers = {"x-rapidapi-host": "v3.football.api-sports.io", "x-rapidapi-key": "a991e40daffd726206f67b1a40947c67"}
     respuesta = requests.get(url, params=parameters, headers=headers)
     dict_fechas = {}
     locales = {}
@@ -565,7 +587,7 @@ def win_or_draw_f(id_partido:int)->int:
 
     parameters = {"fixture":id_partido}
 
-    headers = {"x-rapidapi-host": "v3.football.api-sports.io", "x-rapidapi-key": "6560a6c96c1a8e1c14463129104c7c84" }
+    headers = {"x-rapidapi-host": "v3.football.api-sports.io", "x-rapidapi-key": "a991e40daffd726206f67b1a40947c67" }
 
     respuesta = requests.get(url, params = parameters, headers = headers)
 
@@ -581,7 +603,7 @@ def win_or_draw_f(id_partido:int)->int:
     return win_or_draw
 
 
-def apuesta()->None:
+def apuesta(mail:str)->None:
 
     print("Estos son los equipos que estan participando del torneo 2023")
      
@@ -625,11 +647,11 @@ def apuesta()->None:
     cant_q_se_paga:int = random.randrange(1,5)#cuanto se le paga al ganador respecto a lo apostado
     
     plata_apostada:float = input("Ingrese monto de dinero que desea apostar: ")
-    id_usuario = input("MAIL: ")
-    dinero_insuficiente = validar_dinero_cuenta_usuario (id_usuario, plata_apostada)
+
+    dinero_insuficiente = validar_dinero_cuenta_usuario (mail, plata_apostada)
     if dinero_insuficiente == False:
         fecha = validacion_fecha ()
-        registrar_plata_apostada_usuario (id_usuario, plata_apostada, fecha)
+        registrar_plata_apostada_usuario(mail, plata_apostada, fecha)
 
 
     local = dict_locales[dict_fechas[fecha_elegida][0]]
@@ -657,15 +679,15 @@ def apuesta()->None:
 
         # sumarle lo que gano a la plata que ya tenia 
         pago = float(pago)
-        registrar_transacciones_usuarios (id_usuario,fecha, "Gana", " (+)", pago)
-        modificar_dinero_cuenta_usuario (id_usuario , pago, fecha)
+        registrar_transacciones_usuarios (mail,fecha, "Gana", " (+)", pago)
+        modificar_dinero_cuenta_usuario (mail, pago, fecha)
     else: 
         print("Lo sentimos, usted a perdido la apuesta")
         bet = "-"#como resulto la apuesta 
         # descontarle lo que apostp de la cuenta 
 
-    registrar_transacciones_usuarios (id_usuario,fecha, "pierde", " (-)", plata_apostada)
-    modificar_dinero_cuenta_usuario (id_usuario , float(plata_apostada), fecha, restar = True)
+        registrar_transacciones_usuarios (mail,fecha, "pierde", " (-)", plata_apostada)
+        modificar_dinero_cuenta_usuario (mail , float(plata_apostada), fecha, restar = True)
      
 
 
@@ -750,31 +772,29 @@ def main()->None:
         if usuario.lower()=="b":
             id_usario = user_registration(ids_ingresados)
             ids_ingresados.append(id_usario)
+            op = input("Desea acceder a la plataforma? y/n:")
 
         elif usuario.lower()=="a":
-             users = inicio_sesion() #creo que funciona
-             for intentos in range(3):
+            mail = input("Correo electronico: ")
+            password = input("Contraseña: ") 
+            users = inicio_sesion()
+            while(validar_mail_2(mail,password,users)==False):
+                print("Mail incorrecto. Si usted ya posee una cuenta, ingrese correctamente el mail")
                 mail = input("Correo electronico: ")
                 password =("Contraseña: ")
-                if mail in users and sha256_crypt.verify(password, users[mail]["password"]):
-                    print("Inicio de sesión exitoso!")
-                else:
-                    print("Datos inválidos. Intento restante:", 2 - intentos)
-             else:
-                print("Has excedido el número máximo de intentos. Por favor, vuelve a intentarlo más tarde.")
-               
+            
+
+   
     
-        equipos_2023 = equipos_liga_2023_2()
-        jugadores_2023 = jugadores_equipos ()
-        mostrar_tabla_posiciones(2022)
-        apuesta()
+        """equipos_2023 = equipos_liga_2023_2()
+        jugadores_2023 = jugadores_equipos ()"""
 
         while not fin :
             imprimir_opciones()
             opcion_elegida = input ("Seleccione una opcion del menu: ")
             opcion_elegida = int(opcion_elegida)
             if opcion_elegida != 9 :
-                opcion_seleccionada(opcion_elegida, equipos_2023, jugadores_2023)   
+                opcion_seleccionada(opcion_elegida,mail)#, equipos_2023, jugadores_2023
             else:
                 fin = True
                 print("¡Gracias por su vista! Dejanos una opinion: ")
@@ -785,7 +805,10 @@ def main()->None:
 
 main()
 
-
+"""equipos_2023 = equipos_liga_2023_2()
+   jugadores_2023 = jugadores_equipos ()
+        mostrar_tabla_posiciones(2022)
+        apuesta()"""
 
 #idea original de apuestas que no funcionaba
     
@@ -877,7 +900,7 @@ main()
 
 #     parameters = {"league": "128","season": 2023,"team":id_team}
 
-#     headers = {"x-rapidapi-host": "v3.football.api-sports.io", "x-rapidapi-key": "6560a6c96c1a8e1c14463129104c7c84" }
+#     headers = {"x-rapidapi-host": "v3.football.api-sports.io", "x-rapidapi-key": "a991e40daffd726206f67b1a40947c67" }
 
 #     respuesta = requests.get(url, params = parameters, headers = headers)
 #     fechas = {}
