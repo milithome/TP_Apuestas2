@@ -171,7 +171,7 @@ def opcion_seleccionada (opcion_elegida:int, mail:str):   #agregar mas parametro
 
     elif opcion_elegida == 5:
         print ("--- Cargar dinero a cuenta ---")
-        dinero = int(input("Ingrese la cantidad de dinero que desea agregar a su cuenta:"))
+        dinero = float(input("Ingrese la cantidad de dinero que desea agregar a su cuenta:"))
         fecha = input ("Ingrese fecha en formato YYYY/MM/DD: ")
         while validacion_fecha(fecha)==False:
             print("Formato incorrecto, intente de nuevo")
@@ -412,7 +412,7 @@ def grafico(equipo_id:int)->None:
         plt.show()
 
 
-def cargar_dinero_cuenta_usuario(id_usuario, dinero, fecha): 
+def cargar_dinero_cuenta_usuario(mail, dinero, fecha): 
     #PRE :  verifivo usuario en el archivo data_usuario
     #POST:  carga dinero dsiponible cuenta usuario ingesada
     
@@ -428,14 +428,14 @@ def cargar_dinero_cuenta_usuario(id_usuario, dinero, fecha):
                mail = row[0]
                users[mail] = {'money': row[5]}
 
-    if id_usuario  in users.keys():
-        dinero_en_cuenta = users[id_usuario]['money'] 
-        dinero_actualizado = dinero_en_cuenta + dinero
-
+    if mail  in users.keys():
+        dinero_en_cuenta = users[mail]['money'] 
+        dinero_actualizado = float(dinero_en_cuenta) + float(dinero)
+        dinero_actualizado = float(dinero_actualizado)
     print (f"Ahora posee {dinero_actualizado} disponible en su cuenta. ")
     
-    registrar_transacciones_usuarios (id_usuario,fecha, "Deposita", dinero) #carga deposito de dinero en el archivo transacciones
-    modificar_dinero_cuenta_usuario (id_usuario, dinero, fecha) #guardo plata agregada en cuenta usuario
+    registrar_transacciones_usuarios (mail,fecha, "Deposita", dinero) #carga deposito de dinero en el archivo transacciones
+    modificar_dinero_cuenta_usuario (mail, dinero, fecha) #guardo plata agregada en cuenta usuario
 
 
 def fechas_teams(id_team: int) -> dict:
@@ -501,7 +501,7 @@ def validacion_fecha (fecha:str) -> bool:
             fecha_valida = False
     return fecha_valida
 
-def registrar_transacciones_usuarios (id_usuario:str,fecha_actual:str, resultado: str, importe: int) -> dict:
+def registrar_transacciones_usuarios (mail_usuario:str,fecha_actual:str, resultado: str, importe: int) -> dict:
     #mismo planteo e idea que el archivo usuarios
 
     transacciones_usuarios = {}
@@ -516,16 +516,16 @@ def registrar_transacciones_usuarios (id_usuario:str,fecha_actual:str, resultado
                 transacciones_usuarios[mail] = {"fecha": row [1], "resultado": row [2], "importe": row[3]}
 
 
-    transacciones_usuarios [id_usuario] = {"fecha" : fecha_actual, "resultado": resultado, "importe" : importe}  #defino diccionario 
+    transacciones_usuarios [mail] = {"fecha" : fecha_actual, "resultado": resultado, "importe" : importe}  #defino diccionario 
     
     with open("transacciones.csv", "w", newline= '', encoding="UTF-8") as archivo_csv: #aclaro con un 'w' que es un archivo de escritura
         
         csv_writer = csv.writer(archivo_csv, delimiter=',', quotechar='"',quoting=csv.QUOTE_NONNUMERIC)
         csv_writer.writerow(["mail","fecha","resultado","importe"]) #---> escribir encabezado
-        for mail, data in transacciones_usuarios.items():
-            csv_writer.writerow({"mail": mail, "fecha": data["fecha"],"resultado": data["resultado"], "importe":data["importe"]})
+        for mail_usuario, data in transacciones_usuarios.items():
+            csv_writer.writerow([mail_usuario, data["fecha"],data["resultado"], data["importe"]])
 
-def validar_dinero_cuenta_usuario (id_usuario: str, importe: float):
+def validar_dinero_cuenta_usuario (mail: str, importe: float):
     #PRE: verifico dinero disponible usuario
     #POST: devuelve un booleano (si dinero en cuenta menor importe ---> dinero_insuficiente = FALSE)
     
@@ -541,13 +541,13 @@ def validar_dinero_cuenta_usuario (id_usuario: str, importe: float):
     
     dinero_insuficiente = False 
 
-    if id_usuario in users:
+    if mail in users:
         dinero_cuenta = users[mail]['money']
         if dinero_cuenta < importe:
             dinero_insuficiente = True
     return dinero_insuficiente
 
-def modificar_dinero_cuenta_usuario (id_usuario:  str , dinero : float, fecha: str, restar: bool = False) -> None:
+def modificar_dinero_cuenta_usuario (mail:  str , dinero : float, fecha: str, restar: bool = False) -> None:
      #PRE: modifico dinero en cuenta usuario 
      #POST: obtengo archivo actualizado 
     
@@ -559,7 +559,7 @@ def modificar_dinero_cuenta_usuario (id_usuario:  str , dinero : float, fecha: s
            csv_reader = csv.reader(archivo_csv, delimiter=',') 
            next(csv_reader)
            rows = list(csv_reader)
-           usuario_modificar = id_usuario
+           usuario_modificar = mail
            for row in rows:
                if row[0] == usuario_modificar:
                     row [4] = fecha 
@@ -581,7 +581,7 @@ def modificar_dinero_cuenta_usuario (id_usuario:  str , dinero : float, fecha: s
 
 
 
-def registrar_plata_apostada_usuario (id_usuario:  str , apuesta: float, fecha: str):
+def registrar_plata_apostada_usuario (mail:  str , apuesta: float, fecha: str):
      archivo_csv_users = 'data_users.csv'
      filas_actualizadas  = []
      if os.path.isfile(archivo_csv_users):
@@ -589,7 +589,7 @@ def registrar_plata_apostada_usuario (id_usuario:  str , apuesta: float, fecha: 
            csv_reader = csv.reader(archivo_csv, delimiter=',') 
            next(csv_reader)
            rows = list(csv_reader)
-           usuario_modificar = id_usuario
+           usuario_modificar = mail
            for row in rows:
                if row[0] == usuario_modificar:
                    row [3] = apuesta
@@ -711,7 +711,7 @@ def apuesta(mail:str)->None:
      
 
 
-def usuario_mas_aposto(id_usuario: str, users: dict, apuesta: float) :
+def usuario_mas_aposto(mail: str, users: dict, apuesta: float) :
     maximo_apostador = {}
     users = {} 
     archivo_csv_users = 'data_users.csv'
@@ -723,8 +723,8 @@ def usuario_mas_aposto(id_usuario: str, users: dict, apuesta: float) :
                mail = row[0]
                users[mail] = {'bets':row[3]}
 
-       if id_usuario in users:
-           users[id_usuario]["bets"] = apuesta
+       if mail in users:
+           users[mail]["bets"] = apuesta
            for apostador, datos in users.items():
                 if apostador not in maximo_apostador or datos ["bets"] > maximo_apostador[apostador]:
                  maximo_apostador [apostador] = datos["bets"]
@@ -733,11 +733,11 @@ def usuario_mas_aposto(id_usuario: str, users: dict, apuesta: float) :
     importe_maximo_valor = importes_ordenados [0]
 
 
-    print(f"Los apuestas fueron {importes_ordenados}, el usuario, {id_usuario}, fue quien mas aposto con un total de {importe_maximo_valor} ")
+    print(f"Los apuestas fueron {importes_ordenados}, el usuario, {mail}, fue quien mas aposto con un total de {importe_maximo_valor} ")
     
     
     #ususario mas veces gano
-def usuario_mas_veces_gano (transacciones_usuarios: dict, id_usuario: str)-> None:
+def usuario_mas_veces_gano (transacciones_usuarios: dict, mail: str)-> None:
     maximo_ganador = {}
     transacciones_usuarios = {}
 
@@ -752,16 +752,18 @@ def usuario_mas_veces_gano (transacciones_usuarios: dict, id_usuario: str)-> Non
     
     for transaccion in transacciones_usuarios.values():
         if transaccion["resultado"] == "gana":
-            id_usuario = transaccion[id_usuario]
-            if id_usuario not in maximo_ganador:
-                maximo_ganador[id_usuario] = 1
+            mail = transaccion[mail]
+            if mail not in maximo_ganador:
+                maximo_ganador[mail] = 1
             else:
-                maximo_ganador[id_usuario] += 1
+                maximo_ganador[mail] += 1
 
-    ganador = maximo_ganador.get()
-    if ganador:
-        victorias = maximo_ganador[ganador]
-        print(f"El usuario que mas veces gano es {ganador} con un total de victorias {victorias} ")
+    victorias = sorted(maximo_ganador.values (), reverse = True) 
+    if len(victorias) == 0:
+        print("Todavia no hay valores para analizar") 
+    else:    
+        max_victoria = victorias [0]
+        print(f"El usuario, {mail}, fue el ganador con {max_victoria} victorias")
         
 
 def main()->None:
