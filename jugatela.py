@@ -443,30 +443,35 @@ def fechas_teams(id_team: int) -> dict:
     locales = {}
     visitantes = {}
     id_fecha = {}
+    x_op_l_v = {}
 
     if respuesta.status_code == 200:
         data = respuesta.json()
         fixtures = data['response']
 
-        print("Fechas de Temporada 2023 (se lee así Local vs Visitante):")
+        x_op = 1
+
+        print("Fechas de Temporada 2023:")
         for fixture in fixtures:
             fecha_entera = fixture['fixture']['date']
             fecha = fecha_entera.split("T")[0]
             local = fixture['teams']['home']['name']
             visitante = fixture['teams']['away']['name']
 
-            print(f"Fecha: {fecha}- {local} (L) vs {visitante}(V)")
+            print(f"Fecha {x_op}: el {fecha} juegan -> {local} (L) vs {visitante}(V)")
 
             dict_fechas[fixture['fixture']['id']] = {'fecha': fecha, 'local': local, 'visitante': visitante}
             locales[local] = fixture['teams']['home']['id']
             visitantes[visitante] = fixture['teams']['away']['id']
             # dict_fechas[fixture['fixture']['id']] = [locales[local], visitantes[visitante]]
-            id_fecha[(locales[local], visitantes[visitante])] = fixture['fixture']['id']
+            id_fecha[[locales[local], visitantes[visitante]]] = fixture['fixture']['id']
+            x_op_l_v[x_op]= [locales[local], visitantes[visitante]]
 
+            x_op+=1
     else:
         print("Error al traer los datos")
 
-    return dict_fechas, locales, visitantes,id_fecha
+    return dict_fechas, locales, visitantes,id_fecha, x_op_l_v
 
 
 def mostrar_teams()->dict:
@@ -622,41 +627,40 @@ def apuesta(mail:str)->None:
 
     print("Estos son los equipos que estan participando del torneo 2023")
      
-    mostrar_teams()
+    equipos_enumerados, dict_equipos =mostrar_teams()
     
     equipos_dict,equipos_id = equipos_liga_2023()
 
-    equipo_op = input("Elija por cual equipo desea apostar: ")
-    while(equipo_op not in equipos_id.values()):
+    equipo_op = int(input("Elija por cual equipo desea apostar: "))
+    while(equipo_op not in equipos_enumerados.keys()):
         print("Opcion incorrecta, intente de nuevo")
-        equipo_op = input("Escriba por el equipo que desea apostar: ")
+        equipos_enumerados, dict_equipos =mostrar_teams()
+        equipo_op = int(input("Escriba por el equipo que desea apostar: "))
 
-    id_equipo = equipos_dict[equipo_op]
+    id_equipo = equipos_dict[equipos_enumerados[equipo_op]]
 
     #pide fecha usuario y evaulua qwue coincida con id del partido
-    dict_fechas, dict_locales, dict_visitantes, ids_fechas = fechas_teams(id_equipo)
-    fecha_elegida = input("Ingrese la fecha por la que desea apostar (YYYY-MM-DD): ")
-    id_partido = None
-    for partido, equipos in dict_fechas.items():
-        fecha_partido = equipos["fecha"]
-        if fecha_partido == fecha_elegida:
-            equipo_local = equipos["local"]
-            equipo_visitante = equipos["visitante"]
-            if equipo_local in ids_fechas and equipo_visitante in ids_fechas:
-                id_partido = ids_fechas[partido]
-            print(f"Fecha: {fecha_partido} - {equipo_local} (L) vs {equipo_visitante} (V)")
-        
-    else:
-        print("Fecha no encontrada")
+    dict_fechas, dict_locales, dict_visitantes, ids_fechas, dicc_lv_idfecha = fechas_teams(id_equipo)
+    fecha_elegida = int(input("Ingrese la fecha por la que desea apostar(ingrese numero que tiene al lado): "))
+    
+    while(fecha_elegida not in dicc_lv_idfecha.keys()):
+        print("Opcion invalida, intente de nuevo.")
+        dict_fechas, dict_locales, dict_visitantes, ids_fechas, dicc_lv_idfecha = fechas_teams(id_equipo)
+        fecha_elegida = int(input("Ingrese la fecha por la que desea apostar(ingrese numero que tiene al lado): "))
+    
+    id_partido = ids_fechas[dicc_lv_idfecha[fecha_elegida]]
+    
+    local = equipos_id[dict_fechas[id_partido]['local']]
+    visitante = equipos_id[dict_fechas[id_partido]['visitante']]
 
-    apuesta:int = input("Ingrese el numero correspondiente al tipo de apuesta: \n 1- Gana Local \n 2-Empatan\n 3-Gana Visitate")
+    apuesta = int(input("Ingrese el numero correspondiente al tipo de apuesta: \n 1- Gana Local \n 2-Empatan\n 3-Gana Visitate"))
     while(apuesta not in (1,2,3)):
         print("Opcion invalida, intente de nuevo.")
         apuesta = input("Ingrese el numero correspondiente al tipo de apuesta: \n 1- Gana Local \n 2-Empatan\n 3-Gana Visitate")
 
     casos = {1:"gana local",2:"empatan",3:"gana visitante"}
 
-    print(f"Usted a decidido apostar que {partido[0]}vs{partido[1]}, {casos[apuesta]} en la fecha {fecha_elegida}")
+    print(f"Usted a decidido apostar que {local}vs{visitante}, {casos[apuesta]} en la fecha {fecha_elegida}")
 
     dado_resultado:int = random.randrange(1,4)#para definir si gana L/V o empatan
     cant_q_se_paga:int = random.randrange(1,5)#cuanto se le paga al ganador respecto a lo apostado
@@ -668,9 +672,6 @@ def apuesta(mail:str)->None:
         fecha = validacion_fecha ()
         registrar_plata_apostada_usuario(mail, plata_apostada, fecha)
 
-
-    local = dict_locales[dict_fechas[fecha_elegida][0]]
-    visitante = dict_visitantes[dict_fechas[fecha_elegida][1]]
 
     id_win_or_draw = win_or_draw_f(id_partido) #win_or_draw=true para el id del equipo que devuelve
 
