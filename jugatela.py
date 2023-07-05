@@ -1,3 +1,7 @@
+
+#keys:  mili: a991e40daffd726206f67b1a40947c67
+#       vicky : 407726f0daca539a383c3c8ca8e4ca93
+
 import os
 import requests
 from passlib.hash import sha256_crypt
@@ -285,7 +289,7 @@ def mostrar_tabla_posiciones(temporada:int)->None:
     
     params = {"league": "128","season": temporada}
     
-    headers = {'x-rapidapi-host': "v3.football.api-sports.io",'x-rapidapi-key': "a991e40daffd726206f67b1a40947c67"}
+    headers = {'x-rapidapi-host': "v3.football.api-sports.io",'x-rapidapi-key': "407726f0daca539a383c3c8ca8e4ca93"}
     
     respuesta = requests.get(url, params=params, headers=headers)
     
@@ -307,7 +311,7 @@ def equipos_liga_2023 () -> dict:
     url = "https://v3.football.api-sports.io/teams"
     parameters = {"league": "128", "season": 2023, "country": "Argentina"}
 
-    headers = {"x-rapidapi-host": "v3.football.api-sports.io","x-rapidapi-key": "a991e40daffd726206f67b1a40947c67" }
+    headers = {"x-rapidapi-host": "v3.football.api-sports.io","x-rapidapi-key": "407726f0daca539a383c3c8ca8e4ca93" }
 
     respuesta = requests.get(url, params = parameters, headers = headers)
     equipos_2023 = {}
@@ -333,7 +337,7 @@ def escudo_cancha(id_team: int)->None:
     url = "https://v3.football.api-sports.io/teams?"
     parameters = {"id": id_team,"country": "Argentina","league": "128","season": "2023"}
 
-    headers = {"x-rapidapi-host": "v3.football.api-sports.io","x-rapidapi-key": "a991e40daffd726206f67b1a40947c67" }
+    headers = {"x-rapidapi-host": "v3.football.api-sports.io","x-rapidapi-key": "407726f0daca539a383c3c8ca8e4ca93" }
 
     respuesta = requests.get(url, params = parameters, headers = headers)
 
@@ -728,11 +732,6 @@ def usuario_mas_aposto(id_usuario: str, users: dict, apuesta: float) :
     importes_ordenados = sorted(maximo_apostador.values (), reverse = True)           #----> ordenar descendente (reverse = True)
     importe_maximo_valor = importes_ordenados [0]
 
-    #filtro de apostadores que realizaron apuestas maximas y agrego a a la lista apostadores
-    apostadores = []
-    for apostador, monto in maximo_apostador:
-        if monto == importe_maximo_valor:
-            apostadores.append(apostador)
 
     print(f"Los apuestas fueron {importes_ordenados}, el usuario, {id_usuario}, fue quien mas aposto con un total de {importe_maximo_valor} ")
     
