@@ -1,5 +1,5 @@
 Trabajo Práctico N°2: APUESTAS
-Algoritmos y programacion - FIUBA
+Algoritmos y programacion I - FIUBA 2023
 
 "Recientemente un grupo de amigos decidió emprender y lanzar su portal de apuestas deportivas
 “Jugátela”. Como en Argentina el fanatismo por el fútbol es gigante, se decidió arrancar con una
